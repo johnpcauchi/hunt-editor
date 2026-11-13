@@ -128,6 +128,7 @@ select.full{width:100%;border:1px solid var(--line);border-radius:10px;padding:1
   <button class="chip" id="locChip" title="Your location">📍 Locating…</button>
   <button class="chip" id="bkChip" title="Backup">💾 –</button>
   <span class="grow"></span>
+  <button class="hbtn" id="installBtn" style="display:none">📲 Install app</button>
   <button class="hbtn primary" id="newBtn">＋ New<span class="lbl"> here</span></button>
   <button class="hbtn" id="menuBtn" aria-label="Menu">☰</button>
 </header>
@@ -561,7 +562,60 @@ $("#fileIn").onchange = async e => {
   if(!data || !Array.isArray(data.items) || !/^hunt-editor/.test(data.format || "")){ toast("That file isn't a hunt or backup file.", 4000); return; }
   await importData(data, f.name);
 };
-async function importData(data, fname){
+/* ============ the locked hunt on the website ============ */
+// The hunt (clues, answers, photos) sits on the public website locked with a password (AES-GCM).
+// After the first unlock, the key is kept on this device so updates load by themselves.
+const b64d = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const normPw = s => s.trim().toLowerCase().replace(/\s+/g, "-");
+async function fetchEnc(){ const r = await fetch("hunt.enc.json", {cache:"no-store"}); if(!r.ok) throw new Error("HTTP " + r.status); return r.json(); }
+async function deriveKey(pw, kdf){
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2", hash:kdf.hash, salt:b64d(kdf.salt), iterations:kdf.iterations}, base, {name:"AES-GCM", length:256}, false, ["decrypt"]);
+}
+async function decryptHunt(enc, key){
+  const pt = await crypto.subtle.decrypt({name:"AES-GCM", iv:b64d(enc.cipher.iv)}, key, b64d(enc.data));
+  return JSON.parse(await new Response(new Blob([pt]).stream().pipeThrough(new DecompressionStream("gzip"))).text());
+}
+async function unlockWith(pw){
+  const enc = await fetchEnc();
+  const key = await deriveKey(normPw(pw), enc.kdf);
+  let data; try{ data = await decryptHunt(enc, key); }catch(e){ throw new Error("wrong-password"); }
+  await DB.put("meta", {key, salt:enc.kdf.salt}, "lock");
+  await importData(data, "the online hunt", {quiet:true});
+}
+function passwordForm(boxSel, onDone){
+  const box = $(boxSel);
+  box.querySelector(".pwGo").onclick = async () => {
+    const inp = box.querySelector(".pwIn"), msg = box.querySelector(".pwMsg"), btn = box.querySelector(".pwGo");
+    if(!inp.value.trim()){ msg.textContent = "Type the password first."; return; }
+    btn.disabled = true; msg.textContent = "Opening the hunt…";
+    try{ await unlockWith(inp.value); onDone && onDone(); }
+    catch(e){ msg.textContent = e.message === "wrong-password" ? "That password doesn't match. Check it and try again."
+      : "Couldn't reach the website. Check the internet connection and try again."; btn.disabled = false; }
+  };
+  box.querySelector(".pwIn").addEventListener("keydown", e => { if(e.key === "Enter") box.querySelector(".pwGo").click(); });
+}
+const PW_HTML = `<input class="pwIn" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Hunt password"
+  style="width:100%;border:1px solid var(--line);border-radius:10px;padding:12px;font:inherit;font-size:18px;margin:6px 0 10px">
+  <div class="btns"><button class="btn primary pwGo">🔓 Open the hunt</button></div><p class="pwMsg" style="color:#c62828;min-height:1.2em"></p>`;
+function askPassword(){
+  modal(`<h2>Get the latest hunt</h2><p>Type the hunt password once. After that, updates arrive by themselves whenever you open the app with internet.</p><div id="pwBox">${PW_HTML}</div>
+    <div class="btns"><button class="btn" onclick="closeModal()">Cancel</button></div>`, () => passwordForm("#pwBox", () => { if($("#modal").classList.contains("show") && $("#pwBox")) closeModal(); }));
+}
+async function checkForUpdate(manual){
+  try{
+    const lock = await DB.get("meta", "lock");
+    if(!lock){ if(manual) askPassword(); return; }
+    const enc = await fetchEnc();
+    if(enc.kdf.salt !== lock.salt){ askPassword(); return; }
+    if(!manual && enc.builtAt && enc.builtAt <= (S.meta?.huntBuiltAt || 0)) return;
+    let data; try{ data = await decryptHunt(enc, lock.key); }catch(e){ askPassword(); return; }
+    if(manual && data.builtAt && data.builtAt <= (S.meta?.huntBuiltAt || 0)){ toast("You already have the latest version of the hunt."); return; }
+    await importData(data, "the latest online version", {quiet:true});
+  }catch(e){ if(manual) toast("Couldn't reach the website. Check the internet connection.", 4000); }
+}
+
+async function importData(data, fname, opts = {}){
   const had = liveItems().length > 0;
   const incomingMeta = data.meta || {title:data.title, intro:data.intro, sections:data.sections};
   if(!S.meta) S.meta = {title:incomingMeta.title || "Treasure Hunt", intro:incomingMeta.intro || "", sections:incomingMeta.sections || DEFAULT_SECTIONS, created:now()};
@@ -603,8 +657,15 @@ async function importData(data, fname){
       await DB.put("photos", {id:p.id, itemId:p.itemId, takenAt:p.takenAt, lat:p.lat, lng:p.lng, blob:await dataURLToBlob(p.data)}); ph++; }
   }
   if(data.format === "hunt-editor-backup/1" && !had) S.meta.lastBackup = data.exportedAt;
+  if(isHuntFile && data.builtAt) S.meta.huntBuiltAt = Math.max(S.meta.huntBuiltAt || 0, data.builtAt);
   await saveMeta(); await countPhotos();
   showApp(); renderFilters(); renderList(); drawMarkers(); updateBackupChip();
+  if(opts.quiet && !clashes.length){
+    if(!had) toast(`Hunt loaded: ${added} items.`, 4000);
+    else if(added || updated){ const n = added + updated;
+      toast(`Hunt updated: ${n} ${n === 1 ? "item has" : "items have"} new content. Your pins, notes and photos were kept.`, 6000); }
+    return;
+  }
   if(had) modal(`<h2>${isHuntFile ? "Hunt file updated" : "Merged"}</h2><p>From <b>${esc(fname)}</b>:</p><ul><li>${added} new items added</li>
     <li>${updated} items updated ${isHuntFile ? "with the file's wording (your pins, statuses, notes and photos were kept)" : "(the file's version was newer)"}</li>
     <li>${kept} items unchanged</li>${ph ? `<li>${ph} new photos</li>` : ""}</ul>
@@ -656,6 +717,7 @@ function menu(){
   modal(`<h2>Menu</h2><div class="menu">
     <button id="m1">💾 Save backup file<small>Everything (edits, pins, photos) in one file. Last backup: ${ago(lb)}.</small></button>
     ${navigator.canShare ? `<button id="m2">📤 Share backup<small>Send the backup to OneDrive, Drive, your phone, or email.</small></button>` : ""}
+    <button id="m9">🔄 Get the latest hunt<small>Checks the website for updated clues. This also happens by itself each time you open the app.</small></button>
     <button id="m3">📂 Load hunt or backup file<small>Loads a hunt file, or merges a backup from another device. The newest version of each item wins.</small></button>
     <button id="m4">📄 Export spreadsheet (CSV)<small>All items with answers, coordinates and status, for Excel.</small></button>
     <button id="m5">📝 Hunt intro text<small>Read or edit the introduction given to teams.</small></button>
@@ -666,6 +728,7 @@ function menu(){
     $("#m1").onclick = () => { closeModal(); saveBackup(false); };
     if($("#m2")) $("#m2").onclick = () => { closeModal(); saveBackup(true); };
     $("#m3").onclick = () => { closeModal(); openFile(); };
+    $("#m9").onclick = () => { closeModal(); checkForUpdate(true); };
     $("#m4").onclick = () => { closeModal(); exportCSV(); };
     $("#m5").onclick = introEditor;
     $("#m6").onclick = () => modal(`<h2>Voice language</h2><select class="full" id="lang">
@@ -701,10 +764,13 @@ function help(){
 function showWelcome(){
   $("#side").innerHTML = `<div style="overflow:auto;padding:12px"><div class="welcome" style="margin:10px auto">
     <h2>Welcome</h2>
-    <p>To start, load your hunt file. It holds the clues, answers and old photos. It's kept on this device and never uploaded.</p>
-    <div class="btns"><button class="btn primary" id="wLoad">📂 Load hunt file</button><button class="btn" id="wEmpty">Start an empty hunt</button></div>
-    <p style="font-size:14px;color:var(--muted);margin-top:16px">Tip: in Chrome's ⋮ menu choose <b>Add to Home screen</b> so it opens like an app.</p>
+    <p>Type the hunt password to open the Three Cities hunt. You only need to do this once on each device.</p>
+    <div id="wPw">${PW_HTML}</div>
+    <p style="font-size:14px;color:var(--muted)">Then tap <b>📲 Install app</b> at the top (or Chrome's ⋮ menu › <b>Install app</b>) to put it on your home screen.</p>
+    <details style="margin-top:14px;font-size:14px"><summary style="color:var(--muted)">Other ways to start</summary>
+    <div class="btns" style="margin-top:10px"><button class="btn" id="wLoad">📂 Load a hunt or backup file</button><button class="btn" id="wEmpty">Start an empty hunt</button></div></details>
   </div></div>`;
+  passwordForm("#wPw");
   $("#wLoad").onclick = openFile;
   $("#wEmpty").onclick = async () => { S.meta = {title:"Treasure Hunt", intro:"", sections:DEFAULT_SECTIONS, created:now()}; await saveMeta(); location.reload(); };
 }
@@ -733,7 +799,13 @@ async function boot(){
     if(pts.length) map.fitBounds(pts.map(i => [i.lat, i.lng]), {padding:[40,40], maxZoom:18}); }
   updateBackupChip(); startGeo();
   if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+  if(S.meta) checkForUpdate(false);
 }
+/* install as an app (Chrome shows its own prompt when the site qualifies) */
+let installEvt = null;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; $("#installBtn").style.display = ""; });
+window.addEventListener("appinstalled", () => { $("#installBtn").style.display = "none"; toast("Installed. Open Hunt Editor from your home screen.", 5000); });
+$("#installBtn").onclick = async () => { if(!installEvt) return; installEvt.prompt(); try{ await installEvt.userChoice; }catch(e){} installEvt = null; $("#installBtn").style.display = "none"; };
 window.addEventListener("pagehide", flushSaves);
 document.addEventListener("visibilitychange", () => { if(document.visibilityState === "hidden") flushSaves(); });
 boot();
