@@ -1,0 +1,115 @@
+11-13 12:31:26.743   361   361 D nativeloader: InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
+11-13 12:31:27.597   361   361 D nativeloader: InitDefaultPublicLibraries for_preload=0: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libclang_rt.hwasan-aarch64-android.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
+11-13 12:31:27.633   361   361 D nativeloader: Load libwebviewchromium_loader.so using system ns (caller=/system/framework/framework.jar!classes4.dex): ok
+11-13 12:31:45.013   922   922 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
+11-13 12:31:52.492  1330  1927 W chromium: [1113/123152.488781:WARNING:dns_config_service_android.cc(81)] Failed to read DnsConfig.
+11-13 12:31:55.768  1228  2230 W chromium: [1113/123155.768245:WARNING:dns_config_service_android.cc(81)] Failed to read DnsConfig.
+11-13 12:31:55.834  1228  1784 W .gms.persistent: Verification of void org.chromium.net.impl.CronetUrlRequest.c() took 127.308ms (4202.39 bytecodes/s) (16272B approximate peak alloc)
+11-13 12:31:56.361  1228  1788 W FontLog : 	at org.chromium.net.impl.CronetUrlRequest.onError(:com.google.android.gms.dynamite_cronetdynamite@242335041@24.23.35 (190800-0):4)
+11-13 12:31:58.033  2459  2459 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-13 12:31:58.057  2459  2459 I AndroidRuntime: Using default boot image
+11-13 12:31:58.057  2459  2459 I AndroidRuntime: Leaving lock profiling enabled
+11-13 12:31:58.298  2459  2459 D nativeloader: InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
+11-13 12:31:58.417  2459  2459 D AndroidRuntime: Calling main entry com.android.commands.monkey.Monkey
+11-13 12:31:59.087  2459  2459 I AndroidRuntime: VM exiting with result code 0.
+11-13 12:32:01.550  1526  2669 W chromium: [1113/123201.547122:WARNING:url_request_context_config.cc(716)] Unrecognized Cronet experimental option "enable_telemetry" with params "false
+11-13 12:32:01.550  1526  2669 W chromium: 
+11-13 12:32:03.035  2510  2510 D nativeloader: Load /system/lib64/libwebviewchromium_plat_support.so using ns clns-9 from class loader (caller=/data/app/~~UjCCDcSxPelu2Py-nCKvNA==/com.google.android.webview-nJOZCmuzpiv8HL_DD0--KQ==/WebViewGoogle.apk): ok
+11-13 12:32:03.087  2510  2745 I chromium: [1113/123203.077281:INFO:variations_seed_loader.cc(66)] Failed to open file for reading.: No such file or directory (2)
+11-13 12:32:03.087  2510  2745 I chromium: [1113/123203.087649:INFO:variations_seed_loader.cc(66)] Failed to open file for reading.: No such file or directory (2)
+11-13 12:32:03.243   557   590 I ActivityManager: Start proc 2746:com.google.android.webview:webview_service/u0a151 for service {com.google.android.webview/org.chromium.android_webview.services.VariationsSeedServer}
+11-13 12:32:03.453  2510  2750 W chromium: [WARNING:dns_config_service_android.cc(81)] Failed to read DnsConfig.
+11-13 12:32:03.608   557   590 I ActivityManager: Start proc 2753:com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0ai9000 for  {mt.johncauchi.hunteditor/org.chromium.content.app.SandboxedProcessService0:0}
+11-13 12:32:03.872  2753  2753 I cr_WebViewApkApp: Launched version=124.0.6367.219 minSdkVersion=29 isBundle=false processName=com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0
+11-13 12:32:03.918  2510  2510 D Capacitor: Starting BridgeActivity
+11-13 12:32:03.978  2510  2510 D Capacitor: Registering plugin instance: CapacitorCookies
+11-13 12:32:03.982  2510  2510 D Capacitor: Registering plugin instance: WebView
+11-13 12:32:03.987  2510  2510 D Capacitor: Registering plugin instance: CapacitorHttp
+11-13 12:32:03.988  2510  2510 D Capacitor: Registering plugin instance: SpeechRecognition
+11-13 12:32:03.989  2510  2510 D Capacitor: Registering plugin instance: Filesystem
+11-13 12:32:03.993  2510  2510 D Capacitor: Registering plugin instance: Geolocation
+11-13 12:32:04.058  2510  2510 D Capacitor: Registering plugin instance: Share
+11-13 12:32:04.183  2510  2510 W Capacitor: Unable to read file at path public/plugins
+11-13 12:32:04.204  2510  2510 D Capacitor: Loading app at https://localhost
+11-13 12:32:04.351  2510  2510 D Capacitor: App started
+11-13 12:32:04.364  2510  2510 D Capacitor: App resumed
+11-13 12:32:04.443   557   590 I ActivityManager: Start proc 2823:com.google.android.webview:webview_apk/u0a151 for service {com.google.android.webview/org.chromium.android_webview.nonembedded.AwComponentUpdateService}
+11-13 12:32:04.487  2510  2749 D Capacitor: Handling local request: https://localhost/
+11-13 12:32:04.590  2753  2796 W chromium: [WARNING:runtime_features.cc(694)] SharedStorage for M118+ cannot be enabled in this configuration. Use --enable-features=SharedStorageAPI,SharedStorageAPIM118 in addition.
+11-13 12:32:04.590  2753  2796 W chromium: [WARNING:runtime_features.cc(730)] AttributionReportingCrossAppWeb cannot be enabled in this configuration. Use --enable-features=ConversionMeasurement,AttributionReportingCrossAppWeb in addition.
+11-13 12:32:05.033  2510  2510 I Capacitor/SpeechRecognition: Instantiated SpeechRecognizer in load()
+11-13 12:32:05.177  2510  2751 D Capacitor: Handling local request: https://localhost/lib/leaflet.css
+11-13 12:32:05.185  2510  2768 D Capacitor: Handling local request: https://localhost/capacitor.js
+11-13 12:32:05.193  2510  2765 D Capacitor: Handling local request: https://localhost/lib/leaflet.js
+11-13 12:32:05.214  2510  2749 D Capacitor: Handling local request: https://localhost/lib/pmtiles.js
+11-13 12:32:05.236  2510  2756 D Capacitor: Handling local request: https://localhost/lib/protomaps-leaflet.js
+11-13 12:32:05.522  2803  2870 D nativeloader: Load /data/app/~~AbrUnQAwb7VXxwDuX5hjwA==/com.android.chrome-dUldD9HP2sz2YVuZy6aDFQ==/Chrome.apk!/lib/x86_64/libchromium_android_linker.so using ns clns-8 from class loader (caller=/data/app/~~AbrUnQAwb7VXxwDuX5hjwA==/com.android.chrome-dUldD9HP2sz2YVuZy6aDFQ==/Chrome.apk): ok
+11-13 12:32:07.435  2823  2880 W cr_AWNetworkFetcherTask: 	at org.chromium.android_webview.nonembedded.NetworkFetcherTask.download(chromium-TrichromeWebViewGoogle6432.apk-stable-636771938:56)
+11-13 12:32:09.452  2510  2751 D Capacitor: Handling local request: https://localhost/map/three-cities.pmtiles
+11-13 12:32:10.164  2510  2510 V Capacitor/Plugin: To native (Capacitor plugin): callbackId: 14867083, pluginId: Geolocation, methodName: requestPermissions
+11-13 12:32:10.164  2510  2510 V Capacitor: callback: 14867083, pluginId: Geolocation, methodName: requestPermissions, methodData: {}
+11-13 12:32:10.370  2510  2510 V Capacitor/Plugin: To native (Capacitor plugin): callbackId: 14867084, pluginId: Geolocation, methodName: watchPosition
+11-13 12:32:10.370  2510  2510 V Capacitor: callback: 14867084, pluginId: Geolocation, methodName: watchPosition, methodData: {"enableHighAccuracy":true,"timeout":30000,"maximumAge":4000}
+11-13 12:32:11.427  2510  2749 D Capacitor: Handling local request: https://localhost/icon-192.png
+11-13 12:32:20.972  1526  3337 W chromium: [1113/123220.972092:WARNING:url_request_context_config.cc(716)] Unrecognized Cronet experimental option "enable_telemetry" with params "false
+11-13 12:32:20.972  1526  3337 W chromium: 
+11-13 12:32:21.838  1526  1701 D nativeloader: Load /system/lib64/libwebviewchromium_plat_support.so using ns clns-9 from class loader (caller=/data/app/~~UjCCDcSxPelu2Py-nCKvNA==/com.google.android.webview-nJOZCmuzpiv8HL_DD0--KQ==/WebViewGoogle.apk): ok
+11-13 12:32:21.918  1526  3398 I chromium: [1113/123221.918877:INFO:variations_seed_loader.cc(66)] Failed to open file for reading.: No such file or directory (2)
+11-13 12:32:21.919  1526  3398 I chromium: [1113/123221.919078:INFO:variations_seed_loader.cc(66)] Failed to open file for reading.: No such file or directory (2)
+11-13 12:32:22.455   557   590 I ActivityManager: Start proc 3422:com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0i1 for  {com.google.android.googlequicksearchbox/org.chromium.content.app.SandboxedProcessService0:0}
+11-13 12:32:22.643  3422  3422 I cr_WebViewApkApp: Launched version=124.0.6367.219 minSdkVersion=29 isBundle=false processName=com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0
+11-13 12:32:22.690  1526  3442 E chromium: [ERROR:simple_file_enumerator.cc(21)] opendir /data/user/0/com.google.android.googlequicksearchbox/cache/WebView/Default/HTTP Cache/Code Cache/js: No such file or directory (2)
+11-13 12:32:22.690  1526  3442 E chromium: [ERROR:simple_index_file.cc(614)] Could not reconstruct index from disk
+11-13 12:32:41.971  3477  3610 D StrictMode: 	at org.chromium.net.CronetEngine$Builder.getEnabledCronetProviders(PG:25)
+11-13 12:32:41.971  3477  3610 D StrictMode: 	at org.chromium.net.CronetEngine$Builder.createBuilderDelegate(PG:16)
+11-13 12:32:41.971  3477  3610 D StrictMode: 	at org.chromium.net.CronetEngine$Builder.<init>(PG:1)
+11-13 12:32:41.971  3477  3610 D StrictMode: 	at org.chromium.net.ExperimentalCronetEngine$Builder.<init>(PG:1)
+11-13 12:32:41.983  3477  3610 D StrictMode: 	at org.chromium.net.CronetEngine$Builder.getEnabledCronetProviders(PG:25)
+11-13 12:32:41.983  3477  3610 D StrictMode: 	at org.chromium.net.CronetEngine$Builder.createBuilderDelegate(PG:16)
+11-13 12:32:41.983  3477  3610 D StrictMode: 	at org.chromium.net.CronetEngine$Builder.<init>(PG:1)
+11-13 12:32:41.983  3477  3610 D StrictMode: 	at org.chromium.net.ExperimentalCronetEngine$Builder.<init>(PG:1)
+11-13 12:32:41.984  3477  3610 D StrictMode: 	at org.chromium.net.CronetEngine$Builder.getEnabledCronetProviders(PG:25)
+11-13 12:32:41.984  3477  3610 D StrictMode: 	at org.chromium.net.CronetEngine$Builder.createBuilderDelegate(PG:16)
+11-13 12:32:41.984  3477  3610 D StrictMode: 	at org.chromium.net.CronetEngine$Builder.<init>(PG:1)
+11-13 12:32:41.984  3477  3610 D StrictMode: 	at org.chromium.net.ExperimentalCronetEngine$Builder.<init>(PG:1)
+11-13 12:32:41.987  3477  3610 D StrictMode: 	at org.chromium.net.CronetEngine$Builder.getEnabledCronetProviders(PG:25)
+11-13 12:32:41.987  3477  3610 D StrictMode: 	at org.chromium.net.CronetEngine$Builder.createBuilderDelegate(PG:16)
+11-13 12:32:41.987  3477  3610 D StrictMode: 	at org.chromium.net.CronetEngine$Builder.<init>(PG:1)
+11-13 12:32:41.987  3477  3610 D StrictMode: 	at org.chromium.net.ExperimentalCronetEngine$Builder.<init>(PG:1)
+11-13 12:32:41.989  3477  3610 D StrictMode: 	at org.chromium.net.CronetEngine$Builder.getEnabledCronetProviders(PG:25)
+11-13 12:32:41.989  3477  3610 D StrictMode: 	at org.chromium.net.CronetEngine$Builder.createBuilderDelegate(PG:16)
+11-13 12:32:41.989  3477  3610 D StrictMode: 	at org.chromium.net.CronetEngine$Builder.<init>(PG:1)
+11-13 12:32:41.989  3477  3610 D StrictMode: 	at org.chromium.net.ExperimentalCronetEngine$Builder.<init>(PG:1)
+11-13 12:32:41.992  3477  3610 D StrictMode: 	at org.chromium.net.CronetEngine$Builder.getEnabledCronetProviders(PG:25)
+11-13 12:32:41.992  3477  3610 D StrictMode: 	at org.chromium.net.CronetEngine$Builder.createBuilderDelegate(PG:16)
+11-13 12:32:41.992  3477  3610 D StrictMode: 	at org.chromium.net.CronetEngine$Builder.<init>(PG:1)
+11-13 12:32:41.992  3477  3610 D StrictMode: 	at org.chromium.net.ExperimentalCronetEngine$Builder.<init>(PG:1)
+11-13 12:32:42.873  3477  4009 I cr_CronetUrlRequestContext: destroyNativeStreamLocked org.chromium.net.impl.CronetBidirectionalStream@eda6721
+11-13 12:32:44.730  1568  3819 I cr_CronetUrlRequestContext: destroyNativeStreamLocked org.chromium.net.impl.CronetBidirectionalStream@2c94216
+11-13 12:32:46.062  2510  2510 V Capacitor/Plugin: To native (Capacitor plugin): callbackId: 14867085, pluginId: Filesystem, methodName: writeFile
+11-13 12:32:46.066  2510  2510 V Capacitor: callback: 14867085, pluginId: Filesystem, methodName: writeFile, methodData: {"path":"HuntEditor\/hunt-20261113-123246.json","data":"{\"format\":\"hunt-editor-backup\/1\",\"exportedAt\":1794573166041,\"device\":\"Mozilla\/5.0 (Linux; Android 15; sdk_gphone64_x86_64 Build\/AE3A.240806.043; wv) AppleWebKit\/537.36 (KHTML, like Gecko) Version\/4.0 Chrome\/124.0.6367.219 Safari\/537.36\",\"meta\":{\"title\":\"CI test hunt\",\"intro\":\"Test\",\"sections\":[{\"name\":\"Birgu\",\"code\":\"B\",\"label\":\"Section A\"},{\"name\":\"Cospicua\",\"code\":\"C\",\"label\":\"Section B\"},{\"name\":\"Senglea\",\"code\":\"S\",\"label\":\"Section C\"},{\"name\":\"Anywhere\",\"code\":\"P\",\"label\":\"Photo tasks\"}],\"created\":1794573151386,\"lastChange\":1794573163726},\"items\":[{\"status\":\"ok\",\"flags\":[],\"notes\":\"checked in CI\",\"updatedAt\":1794573163726,\"id\":\"B-clue-01\",\"type\":\"clue\",\"section\":\"Birgu\",\"number\":1,\"text\":\"Test clue one\\nSecond line\",\"answer\":\"Alpha\",\"points\":\"10\",\"orig\":{\"text\":\"Test clue one\\nSecond line\",\"answer\":\"Alpha\",\"points\":\"10\"},\"lat\":35.8871983,\"lng\":14.5225,\"acc\":5,\"pinSource\":\"me\",\"pinnedAt\":1794573163501},{\"status\":\"unchecked\",\"flags\":[],\"notes\":\"\",\"updatedAt\":0,\"id\":\"S-clue-01\",\"type\":\"clue\",\"section\":\"Senglea\",\"number\":1,\"text\":\"Test clue two\",\"answer\":\"Beta\",\"points\":\"10\",\"orig\":{\"text\":\"Test clue two\",\"answer\":\"Beta\",\"points\":\"10\"}}],\"refPhotos\":{},\"photos\":[],\"versionKind\":\"manual\"}","directory":"DOCUMENTS","encoding":"utf8","recursive":true}
+11-13 12:32:46.221  2510  2510 V Capacitor/Plugin: To native (Capacitor plugin): callbackId: 14867086, pluginId: Filesystem, methodName: writeFile
+11-13 12:32:46.221  2510  2510 V Capacitor: callback: 14867086, pluginId: Filesystem, methodName: writeFile, methodData: {"path":"HuntEditor\/hunt-20261113-123246-auto.json","data":"{\"format\":\"hunt-editor-backup\/1\",\"exportedAt\":1794573166217,\"device\":\"Mozilla\/5.0 (Linux; Android 15; sdk_gphone64_x86_64 Build\/AE3A.240806.043; wv) AppleWebKit\/537.36 (KHTML, like Gecko) Version\/4.0 Chrome\/124.0.6367.219 Safari\/537.36\",\"meta\":{\"title\":\"CI test hunt\",\"intro\":\"Test\",\"sections\":[{\"name\":\"Birgu\",\"code\":\"B\",\"label\":\"Section A\"},{\"name\":\"Cospicua\",\"code\":\"C\",\"label\":\"Section B\"},{\"name\":\"Senglea\",\"code\":\"S\",\"label\":\"Section C\"},{\"name\":\"Anywhere\",\"code\":\"P\",\"label\":\"Photo tasks\"}],\"created\":1794573151386,\"lastChange\":1794573166215,\"lastBackup\":0,\"versions\":[{\"name\":\"hunt-20261113-123246.json\",\"savedAt\":1794573166205,\"size\":1207,\"kind\":\"manual\",\"where\":\"Documents › HuntEditor\",\"uri\":\"file:\/\/\/storage\/emulated\/0\/Documents\/HuntEditor\/hunt-20261113-123246.json\"}],\"lastAutoVersion\":1794573166215},\"items\":[{\"status\":\"ok\",\"flags\":[],\"notes\":\"checked in CI\",\"updatedAt\":1794573163726,\"id\":\"B-clue-01\",\"type\":\"clue\",\"section\":\"Birgu\",\"number\":1,\"text\":\"Test clue one\\nSecond line\",\"answer\":\"Alpha\",\"points\":\"10\",\"orig\":{\"text\":\"Test clue one\\nSecond line\",\"answer\":\"Alpha\",\"points\":\"10\"},\"lat\":35.8871983,\"lng\":14.5225,\"acc\":5,\"pinSource\":\"me\",\"pinnedAt\":1794573163501},{\"status\":\"unchecked\",\"flags\":[],\"notes\":\"\",\"updatedAt\":0,\"id\":\"S-clue-01\",\"type\":\"clue\",\"section\":\"Senglea\",\"number\":1,\"text\":\"Test clue two\",\"answer\":\"Beta\",\"points\":\"10\",\"orig\":{\"text\":\"Test clue two\",\"answer\":\"Beta\",\"points\":\"10\"}}],\"refPhotos\":{},\"photos\":[],\"versionKind\":\"auto\"}","directory":"DOCUMENTS","encoding":"utf8","recursive":true}
+11-13 12:32:46.300  2510  2510 V Capacitor/Plugin: To native (Capacitor plugin): callbackId: 14867087, pluginId: Filesystem, methodName: readdir
+11-13 12:32:46.301  2510  2510 V Capacitor: callback: 14867087, pluginId: Filesystem, methodName: readdir, methodData: {"path":"HuntEditor","directory":"DOCUMENTS"}
+11-13 12:32:46.307  2510  2510 V Capacitor/Plugin: To native (Capacitor plugin): callbackId: 14867088, pluginId: Filesystem, methodName: readdir
+11-13 12:32:46.307  2510  2510 V Capacitor: callback: 14867088, pluginId: Filesystem, methodName: readdir, methodData: {"path":"HuntEditor","directory":"DOCUMENTS"}
+11-13 12:32:46.372  3477  4009 I cr_CronetUrlRequestContext: destroyNativeStreamLocked org.chromium.net.impl.CronetBidirectionalStream@7fa73ca
+11-13 12:32:46.487  2510  2510 V Capacitor/Plugin: To native (Capacitor plugin): callbackId: 14867089, pluginId: Filesystem, methodName: readdir
+11-13 12:32:46.488  2510  2510 V Capacitor: callback: 14867089, pluginId: Filesystem, methodName: readdir, methodData: {"path":"HuntEditor","directory":"DATA"}
+11-13 12:32:46.493  2510  2510 V Capacitor/Plugin: To native (Capacitor plugin): callbackId: 14867090, pluginId: Filesystem, methodName: readdir
+11-13 12:32:46.493  2510  2510 V Capacitor: callback: 14867090, pluginId: Filesystem, methodName: readdir, methodData: {"path":"HuntEditor","directory":"DATA"}
+11-13 12:32:46.502  2510  2510 D Capacitor: Sending plugin error: {"save":false,"callbackId":"14867090","pluginId":"Filesystem","methodName":"readdir","success":false,"error":{"message":"'readdir' failed because file at '\/data\/user\/0\/mt.johncauchi.hunteditor\/files\/HuntEditor\/' does not exist.","code":"OS-PLUG-FILE-0008"}}
+11-13 12:32:46.509  2510  2510 D Capacitor: Sending plugin error: {"save":false,"callbackId":"14867089","pluginId":"Filesystem","methodName":"readdir","success":false,"error":{"message":"'readdir' failed because file at '\/data\/user\/0\/mt.johncauchi.hunteditor\/files\/HuntEditor\/' does not exist.","code":"OS-PLUG-FILE-0008"}}
+11-13 12:32:46.528  2510  2510 V Capacitor/Plugin: To native (Capacitor plugin): callbackId: 14867091, pluginId: Filesystem, methodName: readdir
+11-13 12:32:46.528  2510  2510 V Capacitor: callback: 14867091, pluginId: Filesystem, methodName: readdir, methodData: {"path":"HuntEditor","directory":"DOCUMENTS"}
+11-13 12:32:46.565  2510  2510 V Capacitor/Plugin: To native (Capacitor plugin): callbackId: 14867092, pluginId: Filesystem, methodName: readdir
+11-13 12:32:46.565  2510  2510 V Capacitor: callback: 14867092, pluginId: Filesystem, methodName: readdir, methodData: {"path":"HuntEditor","directory":"DATA"}
+11-13 12:32:46.569  2510  2510 D Capacitor: Sending plugin error: {"save":false,"callbackId":"14867092","pluginId":"Filesystem","methodName":"readdir","success":false,"error":{"message":"'readdir' failed because file at '\/data\/user\/0\/mt.johncauchi.hunteditor\/files\/HuntEditor\/' does not exist.","code":"OS-PLUG-FILE-0008"}}
+11-13 12:32:46.574  2510  2510 V Capacitor/Plugin: To native (Capacitor plugin): callbackId: 14867093, pluginId: Filesystem, methodName: readFile
+11-13 12:32:46.574  2510  2510 V Capacitor: callback: 14867093, pluginId: Filesystem, methodName: readFile, methodData: {"path":"HuntEditor\/hunt-20261113-123246.json","directory":"DOCUMENTS","encoding":"utf8"}
+11-13 12:32:46.639  2510  2510 V Capacitor/Plugin: To native (Capacitor plugin): callbackId: 14867094, pluginId: Filesystem, methodName: writeFile
+11-13 12:32:46.639  2510  2510 V Capacitor: callback: 14867094, pluginId: Filesystem, methodName: writeFile, methodData: {"path":"HuntEditor\/exports\/ci-test.csv","data":"a,b\n1,2","directory":"DOCUMENTS","encoding":"utf8","recursive":true}
+11-13 12:32:46.737  2510  2510 V Capacitor/Plugin: To native (Capacitor plugin): callbackId: 14867095, pluginId: SpeechRecognition, methodName: available
+11-13 12:32:46.738  2510  2510 V Capacitor: callback: 14867095, pluginId: SpeechRecognition, methodName: available, methodData: {}
+11-13 12:32:46.741  2510  2795 I Capacitor/SpeechRecognition: Called for available(): true

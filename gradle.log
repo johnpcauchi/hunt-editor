@@ -1,0 +1,294 @@
+Downloading https://services.gradle.org/distributions/gradle-8.11.1-all.zip
+.....................10%......................20%......................30%......................40%......................50%......................60%......................70%......................80%......................90%......................100%
+
+Welcome to Gradle 8.11.1!
+
+Here are the highlights of this release:
+ - Parallel load and store for Configuration Cache
+ - Java compilation errors at the end of the build output
+ - Consolidated report for warnings and deprecations
+
+For more details see https://docs.gradle.org/8.11.1/release-notes.html
+
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.11.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :app
+WARNING: Using flatDir should be avoided because it doesn't support any meta-data formats.
+
+> Configure project :capacitor-cordova-android-plugins
+WARNING: Using flatDir should be avoided because it doesn't support any meta-data formats.
+
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:javaPreCompileDebug
+> Task :capacitor-android:preBuild UP-TO-DATE
+> Task :capacitor-android:preDebugBuild UP-TO-DATE
+> Task :capacitor-community-speech-recognition:preBuild UP-TO-DATE
+> Task :capacitor-community-speech-recognition:preDebugBuild UP-TO-DATE
+> Task :capacitor-community-speech-recognition:writeDebugAarMetadata
+> Task :capacitor-android:writeDebugAarMetadata
+> Task :capacitor-cordova-android-plugins:preBuild UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:preDebugBuild UP-TO-DATE
+> Task :capacitor-filesystem:preBuild UP-TO-DATE
+> Task :capacitor-filesystem:preDebugBuild UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:writeDebugAarMetadata
+> Task :capacitor-geolocation:preBuild UP-TO-DATE
+> Task :capacitor-geolocation:preDebugBuild UP-TO-DATE
+> Task :capacitor-filesystem:writeDebugAarMetadata
+> Task :capacitor-share:preBuild UP-TO-DATE
+> Task :capacitor-geolocation:writeDebugAarMetadata
+> Task :capacitor-share:preDebugBuild UP-TO-DATE
+> Task :capacitor-share:writeDebugAarMetadata
+> Task :app:generateDebugResValues
+> Task :capacitor-android:generateDebugResValues
+> Task :capacitor-android:generateDebugResources
+> Task :app:checkDebugAarMetadata
+> Task :capacitor-android:packageDebugResources
+> Task :capacitor-community-speech-recognition:generateDebugResValues
+> Task :capacitor-community-speech-recognition:generateDebugResources
+> Task :capacitor-community-speech-recognition:packageDebugResources
+> Task :capacitor-cordova-android-plugins:generateDebugResValues
+> Task :capacitor-cordova-android-plugins:generateDebugResources
+> Task :capacitor-cordova-android-plugins:packageDebugResources
+> Task :capacitor-filesystem:generateDebugResValues
+> Task :capacitor-filesystem:generateDebugResources
+> Task :capacitor-filesystem:packageDebugResources
+> Task :capacitor-geolocation:generateDebugResValues
+> Task :capacitor-geolocation:generateDebugResources
+> Task :capacitor-geolocation:packageDebugResources
+> Task :capacitor-share:generateDebugResValues
+> Task :capacitor-share:generateDebugResources
+> Task :capacitor-share:packageDebugResources
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :capacitor-android:extractDeepLinksDebug
+> Task :capacitor-community-speech-recognition:extractDeepLinksDebug
+> Task :capacitor-community-speech-recognition:processDebugManifest
+> Task :app:parseDebugLocalResources
+> Task :capacitor-cordova-android-plugins:extractDeepLinksDebug
+> Task :capacitor-android:processDebugManifest
+> Task :capacitor-filesystem:extractDeepLinksDebug
+> Task :capacitor-cordova-android-plugins:processDebugManifest
+> Task :capacitor-geolocation:extractDeepLinksDebug
+> Task :capacitor-filesystem:processDebugManifest
+> Task :capacitor-share:extractDeepLinksDebug
+> Task :capacitor-geolocation:processDebugManifest
+> Task :capacitor-share:processDebugManifest
+> Task :app:mergeDebugResources
+> Task :capacitor-android:compileDebugLibraryResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:processDebugManifestForPackage
+> Task :capacitor-android:parseDebugLocalResources
+> Task :capacitor-community-speech-recognition:compileDebugLibraryResources
+> Task :capacitor-cordova-android-plugins:compileDebugLibraryResources
+> Task :capacitor-community-speech-recognition:parseDebugLocalResources
+> Task :capacitor-android:generateDebugRFile
+> Task :capacitor-filesystem:compileDebugLibraryResources
+> Task :capacitor-cordova-android-plugins:parseDebugLocalResources
+> Task :capacitor-community-speech-recognition:generateDebugRFile
+> Task :capacitor-filesystem:parseDebugLocalResources
+> Task :capacitor-geolocation:compileDebugLibraryResources
+> Task :capacitor-cordova-android-plugins:generateDebugRFile
+> Task :capacitor-filesystem:generateDebugRFile
+> Task :capacitor-geolocation:parseDebugLocalResources
+> Task :capacitor-share:compileDebugLibraryResources
+> Task :capacitor-geolocation:generateDebugRFile
+> Task :capacitor-share:parseDebugLocalResources
+> Task :capacitor-android:javaPreCompileDebug
+> Task :capacitor-share:generateDebugRFile
+
+> Task :capacitor-android:compileDebugJavaWithJavac
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :capacitor-community-speech-recognition:javaPreCompileDebug
+> Task :capacitor-cordova-android-plugins:javaPreCompileDebug
+> Task :capacitor-filesystem:checkKotlinGradlePluginConfigurationErrors
+> Task :capacitor-cordova-android-plugins:compileDebugJavaWithJavac NO-SOURCE
+> Task :capacitor-cordova-android-plugins:bundleLibCompileToJarDebug
+> Task :capacitor-geolocation:checkKotlinGradlePluginConfigurationErrors
+> Task :capacitor-filesystem:javaPreCompileDebug
+> Task :capacitor-geolocation:javaPreCompileDebug
+> Task :capacitor-share:javaPreCompileDebug
+> Task :app:mergeDebugShaders
+> Task :capacitor-android:bundleLibCompileToJarDebug
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :capacitor-community-speech-recognition:compileDebugJavaWithJavac
+> Task :capacitor-community-speech-recognition:bundleLibCompileToJarDebug
+> Task :app:processDebugResources
+> Task :capacitor-share:compileDebugJavaWithJavac
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :capacitor-share:bundleLibCompileToJarDebug
+> Task :capacitor-android:mergeDebugShaders
+> Task :capacitor-android:compileDebugShaders NO-SOURCE
+> Task :capacitor-android:generateDebugAssets UP-TO-DATE
+> Task :capacitor-android:packageDebugAssets
+> Task :capacitor-community-speech-recognition:mergeDebugShaders
+> Task :capacitor-community-speech-recognition:compileDebugShaders NO-SOURCE
+> Task :capacitor-community-speech-recognition:generateDebugAssets UP-TO-DATE
+> Task :capacitor-community-speech-recognition:packageDebugAssets
+> Task :capacitor-cordova-android-plugins:mergeDebugShaders
+> Task :capacitor-cordova-android-plugins:compileDebugShaders NO-SOURCE
+> Task :capacitor-cordova-android-plugins:generateDebugAssets UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:packageDebugAssets
+> Task :capacitor-filesystem:mergeDebugShaders
+> Task :capacitor-filesystem:compileDebugShaders NO-SOURCE
+> Task :capacitor-filesystem:generateDebugAssets UP-TO-DATE
+> Task :capacitor-filesystem:packageDebugAssets
+> Task :capacitor-geolocation:mergeDebugShaders
+> Task :capacitor-geolocation:compileDebugShaders NO-SOURCE
+> Task :capacitor-geolocation:generateDebugAssets UP-TO-DATE
+> Task :capacitor-geolocation:packageDebugAssets
+> Task :capacitor-share:mergeDebugShaders
+> Task :capacitor-share:compileDebugShaders NO-SOURCE
+> Task :capacitor-share:generateDebugAssets UP-TO-DATE
+> Task :capacitor-share:packageDebugAssets
+> Task :app:mergeDebugAssets
+> Task :capacitor-community-speech-recognition:bundleLibRuntimeToJarDebug
+> Task :capacitor-android:bundleLibRuntimeToJarDebug
+> Task :app:compressDebugAssets
+> Task :capacitor-share:bundleLibRuntimeToJarDebug
+> Task :capacitor-cordova-android-plugins:bundleLibRuntimeToJarDebug
+> Task :app:desugarDebugFileDependencies
+> Task :app:processDebugJavaRes NO-SOURCE
+> Task :capacitor-android:processDebugJavaRes NO-SOURCE
+> Task :capacitor-community-speech-recognition:processDebugJavaRes NO-SOURCE
+> Task :capacitor-cordova-android-plugins:processDebugJavaRes NO-SOURCE
+> Task :capacitor-share:processDebugJavaRes NO-SOURCE
+> Task :app:checkDebugDuplicateClasses
+
+> Task :app:mergeExtDexDebug
+WARNING: /home/runner/.gradle/caches/8.11.1/transforms/d253a2d6e9532956024d3ef1050820cc/transformed/play-services-location-21.3.0-runtime.jar: D8: The companion object Companion could not be found in class com.google.android.gms.internal.location.zze
+
+> Task :capacitor-geolocation:compileDebugKotlin
+
+> Task :capacitor-filesystem:compileDebugKotlin
+w: file:///home/runner/work/hunt-editor/hunt-editor/build/node_modules/@capacitor/filesystem/android/src/main/kotlin/com/capacitorjs/plugins/filesystem/FilesystemPlugin.kt:335:31 'downloadFile(PluginCall): Unit' is deprecated. Use @capacitor/file-transfer plugin instead
+w: file:///home/runner/work/hunt-editor/hunt-editor/build/node_modules/@capacitor/filesystem/android/src/main/kotlin/com/capacitorjs/plugins/filesystem/LegacyFilesystemImplementation.kt:66:29 Type mismatch: inferred type is String? but String was expected
+w: file:///home/runner/work/hunt-editor/hunt-editor/build/node_modules/@capacitor/filesystem/android/src/main/kotlin/com/capacitorjs/plugins/filesystem/LegacyFilesystemImplementation.kt:143:25 Unnecessary non-null assertion (!!) on a non-null receiver of type Boolean
+w: file:///home/runner/work/hunt-editor/hunt-editor/build/node_modules/@capacitor/filesystem/android/src/main/kotlin/com/capacitorjs/plugins/filesystem/LegacyFilesystemImplementation.kt:152:21 Unnecessary non-null assertion (!!) on a non-null receiver of type Boolean
+
+> Task :capacitor-filesystem:compileDebugJavaWithJavac NO-SOURCE
+> Task :capacitor-geolocation:compileDebugJavaWithJavac NO-SOURCE
+> Task :capacitor-filesystem:bundleLibCompileToJarDebug
+> Task :capacitor-geolocation:bundleLibCompileToJarDebug
+> Task :capacitor-geolocation:bundleLibRuntimeToJarDebug
+> Task :capacitor-filesystem:bundleLibRuntimeToJarDebug
+> Task :app:compileDebugJavaWithJavac
+> Task :app:dexBuilderDebug
+> Task :app:mergeDebugGlobalSynthetics
+> Task :capacitor-filesystem:processDebugJavaRes
+> Task :capacitor-geolocation:processDebugJavaRes
+> Task :app:mergeLibDexDebug
+> Task :app:mergeDebugJniLibFolders
+> Task :capacitor-android:mergeDebugJniLibFolders
+> Task :capacitor-android:mergeDebugNativeLibs NO-SOURCE
+> Task :app:mergeProjectDexDebug
+> Task :capacitor-android:copyDebugJniLibsProjectOnly
+> Task :capacitor-community-speech-recognition:mergeDebugJniLibFolders
+> Task :capacitor-community-speech-recognition:mergeDebugNativeLibs NO-SOURCE
+> Task :capacitor-community-speech-recognition:copyDebugJniLibsProjectOnly
+> Task :capacitor-cordova-android-plugins:mergeDebugJniLibFolders
+> Task :capacitor-cordova-android-plugins:mergeDebugNativeLibs NO-SOURCE
+> Task :capacitor-cordova-android-plugins:copyDebugJniLibsProjectOnly
+> Task :capacitor-filesystem:mergeDebugJniLibFolders
+> Task :capacitor-filesystem:mergeDebugNativeLibs NO-SOURCE
+> Task :capacitor-filesystem:copyDebugJniLibsProjectOnly
+> Task :capacitor-geolocation:mergeDebugJniLibFolders
+> Task :capacitor-geolocation:mergeDebugNativeLibs NO-SOURCE
+> Task :capacitor-geolocation:copyDebugJniLibsProjectOnly
+> Task :capacitor-share:mergeDebugJniLibFolders
+> Task :capacitor-share:mergeDebugNativeLibs NO-SOURCE
+> Task :capacitor-share:copyDebugJniLibsProjectOnly
+> Task :app:mergeDebugNativeLibs NO-SOURCE
+> Task :app:stripDebugDebugSymbols NO-SOURCE
+> Task :app:mergeDebugJavaResource
+> Task :app:validateSigningDebug
+> Task :app:writeDebugAppMetadata
+> Task :app:writeDebugSigningConfigVersions
+> Task :capacitor-android:stripDebugDebugSymbols NO-SOURCE
+> Task :capacitor-android:copyDebugJniLibsProjectAndLocalJars
+> Task :capacitor-android:extractDebugAnnotations
+> Task :capacitor-android:extractDeepLinksForAarDebug
+> Task :capacitor-android:mergeDebugGeneratedProguardFiles
+> Task :capacitor-android:mergeDebugConsumerProguardFiles
+> Task :capacitor-android:prepareDebugArtProfile
+> Task :capacitor-android:prepareLintJarForPublish
+> Task :capacitor-community-speech-recognition:stripDebugDebugSymbols NO-SOURCE
+> Task :capacitor-android:mergeDebugJavaResource
+> Task :capacitor-community-speech-recognition:copyDebugJniLibsProjectAndLocalJars
+> Task :capacitor-android:syncDebugLibJars
+> Task :capacitor-android:bundleDebugAar
+> Task :capacitor-android:assembleDebug
+> Task :capacitor-community-speech-recognition:extractDebugAnnotations
+> Task :capacitor-community-speech-recognition:extractDeepLinksForAarDebug
+> Task :capacitor-community-speech-recognition:mergeDebugGeneratedProguardFiles
+> Task :capacitor-community-speech-recognition:mergeDebugConsumerProguardFiles
+> Task :capacitor-community-speech-recognition:prepareDebugArtProfile
+> Task :capacitor-community-speech-recognition:prepareLintJarForPublish
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+> Task :capacitor-cordova-android-plugins:stripDebugDebugSymbols NO-SOURCE
+> Task :capacitor-community-speech-recognition:mergeDebugJavaResource
+> Task :capacitor-cordova-android-plugins:copyDebugJniLibsProjectAndLocalJars
+> Task :capacitor-community-speech-recognition:syncDebugLibJars
+> Task :capacitor-community-speech-recognition:bundleDebugAar
+> Task :capacitor-community-speech-recognition:assembleDebug
+> Task :capacitor-cordova-android-plugins:extractDebugAnnotations
+> Task :capacitor-cordova-android-plugins:extractDeepLinksForAarDebug
+> Task :capacitor-cordova-android-plugins:mergeDebugGeneratedProguardFiles
+> Task :capacitor-cordova-android-plugins:mergeDebugConsumerProguardFiles
+> Task :capacitor-cordova-android-plugins:prepareDebugArtProfile
+> Task :capacitor-cordova-android-plugins:prepareLintJarForPublish
+> Task :capacitor-filesystem:stripDebugDebugSymbols NO-SOURCE
+> Task :capacitor-filesystem:copyDebugJniLibsProjectAndLocalJars
+> Task :capacitor-cordova-android-plugins:mergeDebugJavaResource
+> Task :capacitor-cordova-android-plugins:syncDebugLibJars
+> Task :capacitor-cordova-android-plugins:bundleDebugAar
+> Task :capacitor-cordova-android-plugins:assembleDebug
+> Task :capacitor-filesystem:extractDebugAnnotations
+> Task :capacitor-filesystem:extractDeepLinksForAarDebug
+> Task :capacitor-filesystem:mergeDebugGeneratedProguardFiles
+> Task :capacitor-filesystem:mergeDebugConsumerProguardFiles
+> Task :capacitor-filesystem:prepareDebugArtProfile
+> Task :capacitor-filesystem:prepareLintJarForPublish
+> Task :capacitor-geolocation:stripDebugDebugSymbols NO-SOURCE
+> Task :capacitor-geolocation:copyDebugJniLibsProjectAndLocalJars
+> Task :capacitor-filesystem:mergeDebugJavaResource
+> Task :capacitor-geolocation:extractDebugAnnotations
+> Task :capacitor-filesystem:syncDebugLibJars
+> Task :capacitor-filesystem:bundleDebugAar
+> Task :capacitor-filesystem:assembleDebug
+> Task :capacitor-geolocation:extractDeepLinksForAarDebug
+> Task :capacitor-geolocation:mergeDebugGeneratedProguardFiles
+> Task :capacitor-geolocation:mergeDebugConsumerProguardFiles
+> Task :capacitor-geolocation:prepareDebugArtProfile
+> Task :capacitor-geolocation:prepareLintJarForPublish
+> Task :capacitor-share:stripDebugDebugSymbols NO-SOURCE
+> Task :capacitor-geolocation:mergeDebugJavaResource
+> Task :capacitor-share:copyDebugJniLibsProjectAndLocalJars
+> Task :capacitor-geolocation:syncDebugLibJars
+> Task :capacitor-geolocation:bundleDebugAar
+> Task :capacitor-geolocation:assembleDebug
+> Task :capacitor-share:extractDebugAnnotations
+> Task :capacitor-share:extractDeepLinksForAarDebug
+> Task :capacitor-share:mergeDebugGeneratedProguardFiles
+> Task :capacitor-share:mergeDebugConsumerProguardFiles
+> Task :capacitor-share:prepareDebugArtProfile
+> Task :capacitor-share:prepareLintJarForPublish
+> Task :capacitor-share:mergeDebugJavaResource
+> Task :capacitor-share:syncDebugLibJars
+> Task :capacitor-share:bundleDebugAar
+> Task :capacitor-share:assembleDebug
+w: Detected multiple Kotlin daemon sessions at kotlin/sessions
+[Incubating] Problems report is available at: file:///home/runner/work/hunt-editor/hunt-editor/build/android/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 2m 13s
+197 actionable tasks: 197 executed

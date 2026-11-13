@@ -1,0 +1,16 @@
+{
+  "platform": "{\"native\":true,\"fs\":true,\"geo\":true,\"speech\":true,\"share\":true,\"register\":true,\"welcome\":true,\"mapButton\":\"\ud83d\uddfa Offline map\",\"offlineMap\":true,\"size\":[800,904]}",
+  "load hunt": "2 items loaded",
+  "location": "{\"lat\":35.8871983,\"lng\":14.5225,\"acc\":5,\"t\":1794573143013} | chip: \ud83d\udccd \u00b15 m",
+  "open item + pin + edit": "{\"status\":\"ok\",\"lat\":35.8871983,\"notes\":\"checked in CI\"}",
+  "save version": "hunt-20261113-123246.json -> Documents \u203a HuntEditor (1207 chars)",
+  "auto version": "hunt-20261113-123246.json, hunt-20261113-123246-auto.json",
+  "list versions": "[[\"hunt-20261113-123246.json\",\"DOCUMENTS\",1207],[\"hunt-20261113-123246-auto.json\",\"DOCUMENTS\",1471]]",
+  "read back version": "hunt-20261113-123246.json: 2 items, B1 status=ok, notes=checked in CI, pinned=true",
+  "csv export file": "{\"where\":\"Documents \u203a HuntEditor \u203a exports\",\"dir\":\"DOCUMENTS\"}",
+  "speech recogniser": "{\"available\":true}",
+  "offline map": "layer=offline, drawn tiles=12",
+  "upload button without settings": "cloud chip visible=false",
+  "menu opens": "10 menu items",
+  "js errors so far": "[]"
+}
