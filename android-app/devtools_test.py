@@ -60,7 +60,7 @@ def check(name, expr, timeout=60):
     print(f"::notice title={name}::{str(v)[:900]}")
     return v
 
-check("platform", "JSON.stringify({native:NATIVE, fs:!!FS, geo:!!GEO, speech:!!SPEECH, share:!!SHARE, welcome:!!document.querySelector('#wLoad'), mapButton:document.querySelector('#layerBtn').textContent, offlineMap:!!layers.offline, size:[innerWidth,innerHeight]})")
+check("platform", "JSON.stringify({native:NATIVE, fs:!!FS, geo:!!GEO, speech:!!SPEECH, share:!!SHARE, register:!!REGISTER, welcome:!!document.querySelector('#wLoad'), mapButton:document.querySelector('#layerBtn').textContent, offlineMap:!!layers.offline, size:[innerWidth,innerHeight]})")
 
 hunt = {"format": "hunt-editor/1", "title": "CI test hunt", "intro": "Test", "builtAt": 1,
         "sections": [{"name": "Birgu", "code": "B", "label": "Section A"}, {"name": "Cospicua", "code": "C", "label": "Section B"},

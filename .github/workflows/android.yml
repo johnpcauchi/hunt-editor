@@ -56,13 +56,14 @@ jobs:
       - name: Make the Android project
         run: |
           mkdir -p build/www
-          cp -r index.html lib manifest.webmanifest icon-192.png icon-512.png build/www/
+          cp -r index.html capacitor.js lib manifest.webmanifest icon-192.png icon-512.png build/www/
           [ -d map ] && cp -r map build/www/ || true
           cp android-app/capacitor.config.json build/
           cd build
           npm init -y > /dev/null
           npm install --no-audit --no-fund @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 \
             @capacitor/filesystem@7 @capacitor/geolocation@7 @capacitor/share@7 @capacitor-community/speech-recognition@7
+          cp node_modules/@capacitor/core/dist/capacitor.js www/capacitor.js
           npx cap add android
           pip install --quiet pillow
           python3 ../android-app/patch_android.py android ${{ github.run_number }}

@@ -8,6 +8,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="stylesheet" href="lib/leaflet.css">
+<script src="capacitor.js"></script>
 <script src="lib/leaflet.js"></script>
 <script src="lib/pmtiles.js"></script>
 <script src="lib/protomaps-leaflet.js"></script>
@@ -206,7 +207,8 @@ function stamp(){ const d = new Date(), p = n => String(n).padStart(2, "0"); ret
 /* ============ platform: Android app (Capacitor) or Chrome ============ */
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
-const plugin = n => (NATIVE && CAP.registerPlugin) ? CAP.registerPlugin(n) : null;
+const REGISTER = (CAP && CAP.registerPlugin) || (window.capacitorExports && window.capacitorExports.registerPlugin);
+const plugin = n => { try{ return (NATIVE && REGISTER) ? REGISTER(n) : null; }catch(e){ console.warn("plugin", n, e); return null; } };
 const FS = plugin("Filesystem"), GEO = plugin("Geolocation"), SPEECH = plugin("SpeechRecognition"), SHARE = plugin("Share");
 const FOLDER = "HuntEditor";       // Documents/HuntEditor on the tablet
 // Write a text file on the tablet. Tries the shared Documents folder first, then the app's own storage.
