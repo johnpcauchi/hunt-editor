@@ -1,0 +1,118 @@
+name: Android app
+
+# Builds the Hunt Editor Android app (HuntEditor.apk), tries it in an Android 15 emulator,
+# and publishes it at: https://github.com/johnpcauchi/hunt-editor/releases/download/android/HuntEditor.apk
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Offline street map of the Three Cities
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -s map/three-cities.pmtiles ]; then echo "::notice::Offline map already in the repository"; exit 0; fi
+          mkdir -p map /tmp/pmt
+          gh release download --repo protomaps/go-pmtiles --pattern '*Linux_x86_64.tar.gz' --dir /tmp/pmt
+          tar xzf /tmp/pmt/*.tar.gz -C /tmp/pmt
+          for i in $(seq 1 21); do
+            D=$(date -u -d "$i days ago" +%Y%m%d)
+            if /tmp/pmt/pmtiles extract "https://build.protomaps.com/$D.pmtiles" map/three-cities.pmtiles \
+                 --bbox=14.500,35.868,14.548,35.902 --maxzoom=15 > /tmp/pmt/log.txt 2>&1; then
+              echo "::notice::Offline map made from the Protomaps build of $D ($(stat -c%s map/three-cities.pmtiles) bytes)"; break
+            fi
+            rm -f map/three-cities.pmtiles
+          done
+          if [ ! -s map/three-cities.pmtiles ]; then echo "::warning::Could not make the offline map: $(tail -3 /tmp/pmt/log.txt | tr '\n' ' ')"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add map/three-cities.pmtiles
+          git commit -m "Add offline map of the Three Cities (OpenStreetMap data via Protomaps)"
+          git push origin HEAD:main HEAD:gh-pages || echo "::warning::Could not save the offline map to the repository"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Make the Android project
+        run: |
+          mkdir -p build/www
+          cp -r index.html lib manifest.webmanifest icon-192.png icon-512.png build/www/
+          [ -d map ] && cp -r map build/www/ || true
+          cp android-app/capacitor.config.json build/
+          cd build
+          npm init -y > /dev/null
+          npm install --no-audit --no-fund @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 \
+            @capacitor/filesystem@7 @capacitor/geolocation@7 @capacitor/share@7 @capacitor-community/speech-recognition@7
+          npx cap add android
+          pip install --quiet pillow
+          python3 ../android-app/patch_android.py android ${{ github.run_number }}
+          npx cap sync android
+
+      - name: Build the app file
+        run: |
+          mkdir -p ~/.android && cp android-app/hunt-editor.keystore ~/.android/debug.keystore
+          cd build/android && chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace > ../../gradle.log 2>&1 || { tail -60 ../../gradle.log; echo "::error::Gradle build failed: $(grep -m3 -E 'error|FAILED|What went wrong' ../../gradle.log | tr '\n' ' ')"; exit 1; }
+          cp app/build/outputs/apk/debug/app-debug.apk ../../HuntEditor.apk
+          echo "::notice::App built: version 1.0.${{ github.run_number }}, $(stat -c%s ../../HuntEditor.apk) bytes"
+
+      - name: Enable hardware acceleration for the emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Try the app in an Android 15 emulator
+        continue-on-error: true
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash android-app/smoke_test.sh
+
+      - name: Publish the app file
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES="Hunt Editor for Android, version 1.0.${{ github.run_number }} (built $(date -u '+%d %b %Y %H:%M UTC')). Download HuntEditor.apk on the tablet and open it to install or update."
+          gh release view android > /dev/null 2>&1 || gh release create android --title "Hunt Editor Android app" --notes "$NOTES"
+          gh release edit android --notes "$NOTES" --title "Hunt Editor Android app"
+          gh release upload android HuntEditor.apk --clobber
+          echo "::notice::Published https://github.com/${{ github.repository }}/releases/download/android/HuntEditor.apk"
+
+      - name: Save the test report
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p ci-out
+          cp gradle.log ci-out/ 2>/dev/null || true
+          echo "run ${{ github.run_number }} $(date -u)" > ci-out/RUN.txt
+          cd ci-out
+          git init -q -b ci-report
+          git add -A
+          git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -q -m "Test report for build ${{ github.run_number }}"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" ci-report

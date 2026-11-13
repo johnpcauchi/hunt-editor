@@ -1,0 +1,9 @@
+{
+  "appId": "mt.johncauchi.hunteditor",
+  "appName": "Hunt Editor",
+  "webDir": "www",
+  "android": {
+    "adjustMarginsForEdgeToEdge": "force",
+    "webContentsDebuggingEnabled": true
+  }
+}

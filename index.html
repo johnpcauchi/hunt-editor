@@ -9,6 +9,8 @@
 <link rel="icon" href="icon-192.png">
 <link rel="stylesheet" href="lib/leaflet.css">
 <script src="lib/leaflet.js"></script>
+<script src="lib/pmtiles.js"></script>
+<script src="lib/protomaps-leaflet.js"></script>
 <style>
 :root{
   --ink:#1b2430; --muted:#5f6b7a; --line:#d9dee5; --bg:#f4f6f8; --card:#fff;
@@ -120,13 +122,16 @@ main{position:absolute;top:56px;left:0;right:0;bottom:0;display:flex}
 .welcome li{margin:6px 0;line-height:1.4}
 label.inline{display:flex;gap:8px;align-items:center;margin:8px 0}
 select.full{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}
+input.full{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;margin:4px 0 10px}
+.box label{display:block;font-size:14px;color:var(--muted);margin-top:4px}
 </style>
 </head>
 <body>
 <header>
   <h1>Hunt Editor</h1>
   <button class="chip" id="locChip" title="Your location">📍 Locating…</button>
-  <button class="chip" id="bkChip" title="Backup">💾 –</button>
+  <button class="chip" id="bkChip" title="Saved versions">💾 –</button>
+  <button class="chip" id="cloudChip" title="Upload to GitHub" style="display:none">☁ –</button>
   <span class="grow"></span>
   <button class="hbtn primary" id="newBtn">＋ New<span class="lbl"> here</span></button>
   <button class="hbtn" id="menuBtn" aria-label="Menu">☰</button>
@@ -181,6 +186,10 @@ select.full{width:100%;border:1px solid var(--line);border-radius:10px;padding:1
 <input type="file" id="camIn" accept="image/*" capture="environment" hidden>
 
 <script>
+window.__errs = []; window.addEventListener("error", e => window.__errs.push(String(e.message)));
+window.addEventListener("unhandledrejection", e => window.__errs.push("promise: " + String(e.reason && (e.reason.message || e.reason))));
+</script>
+<script>
 "use strict";
 /* ============ basic helpers ============ */
 const $ = s => document.querySelector(s);
@@ -192,7 +201,45 @@ function fmtTime(ts){ return ts ? new Date(ts).toLocaleString([], {day:"numeric"
 function dist(a, b){ const R = 6371000, r = x => x*Math.PI/180; const dLat = r(b.lat-a.lat), dLng = r(b.lng-a.lng);
   const h = Math.sin(dLat/2)**2 + Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
 function fmtDist(m){ return m < 1000 ? Math.round(m) + " m" : (m/1000).toFixed(1) + " km"; }
-function stamp(){ const d = new Date(), p = n => String(n).padStart(2, "0"); return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; }
+function stamp(){ const d = new Date(), p = n => String(n).padStart(2, "0"); return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; }
+
+/* ============ platform: Android app (Capacitor) or Chrome ============ */
+const CAP = window.Capacitor;
+const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
+const plugin = n => (NATIVE && CAP.registerPlugin) ? CAP.registerPlugin(n) : null;
+const FS = plugin("Filesystem"), GEO = plugin("Geolocation"), SPEECH = plugin("SpeechRecognition"), SHARE = plugin("Share");
+const FOLDER = "HuntEditor";       // Documents/HuntEditor on the tablet
+// Write a text file on the tablet. Tries the shared Documents folder first, then the app's own storage.
+async function writeTabletFile(name, text, sub = ""){
+  const path = `${FOLDER}/${sub ? sub + "/" : ""}${name}`;
+  for(const dir of ["DOCUMENTS", "DATA"]){
+    try{ const r = await FS.writeFile({path, data:text, directory:dir, encoding:"utf8", recursive:true});
+      return {uri:r.uri, dir, path, where: dir === "DOCUMENTS" ? `Documents › ${FOLDER}${sub ? " › " + sub : ""}` : "the app's own storage"}; }
+    catch(e){ if(dir === "DATA") throw e; }
+  }
+}
+async function listTabletVersions(){
+  const out = [];
+  for(const dir of ["DOCUMENTS", "DATA"]){
+    try{ const r = await FS.readdir({path:FOLDER, directory:dir});
+      for(const f of r.files || []){ const nm = typeof f === "string" ? f : f.name;
+        if(/\.json$/i.test(nm)) out.push({name:nm, dir, size:f.size, mtime:f.mtime, uri:f.uri}); } }catch(e){}
+  }
+  return out.sort((a, b) => b.name.localeCompare(a.name));
+}
+async function shareTabletFile(uri, name){
+  if(!SHARE){ toast("Sharing isn't available here."); return; }
+  try{ await SHARE.share({title:name, files:[uri], dialogTitle:"Send hunt file"}); }catch(e){ if(!/cancel/i.test(String(e && e.message))) toast("Couldn't share: " + (e.message || e)); }
+}
+// Give the person a file: a download in Chrome, a saved file (with a Share option) in the Android app.
+async function deliverFile(text, name, mime, sub){
+  if(!NATIVE){ download(new Blob([text], {type:mime}), name); return "your Downloads folder"; }
+  const r = await writeTabletFile(name, text, sub);
+  modal(`<h2>Saved</h2><p><b>${esc(name)}</b> is in <b>${esc(r.where)}</b> on this tablet.</p>
+    <div class="btns"><button class="btn" id="dfShare">📤 Share</button><button class="btn primary" onclick="closeModal()">OK</button></div>`,
+    () => $("#dfShare").onclick = () => shareTabletFile(r.uri, name));
+  return r.where;
+}
 function blobToDataURL(b){ return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(b); }); }
 async function dataURLToBlob(u){ return (await fetch(u)).blob(); }
 function download(blob, name){ const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); }
@@ -248,7 +295,7 @@ function liveItems(){ return [...S.items.values()].filter(i => !i.deleted); }
 async function saveMeta(){ await DB.put("meta", S.meta, "hunt"); }
 const saveTimers = {}, pending = new Set();
 function touch(it, delay = 350){ it.updatedAt = now(); S.meta.lastChange = it.updatedAt; clearTimeout(saveTimers[it.id]); pending.add(it.id);
-  saveTimers[it.id] = setTimeout(() => { pending.delete(it.id); DB.put("items", it); saveMeta(); updateBackupChip(); }, delay); }
+  saveTimers[it.id] = setTimeout(() => { pending.delete(it.id); DB.put("items", it); saveMeta(); updateBackupChip(); updateCloudChip(); }, delay); }
 function flushSaves(){ for(const id of pending){ clearTimeout(saveTimers[id]); const it = S.items.get(id); if(it) DB.put("items", it); } pending.clear(); if(S.meta) saveMeta(); }
 
 /* ============ map ============ */
@@ -264,19 +311,43 @@ function initMap(){
       {maxZoom:21, maxNativeZoom:19, opacity:.9}),
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
       {maxZoom:21, maxNativeZoom:19})]);
-  layers.streets.addTo(map);
-  $("#layerBtn").onclick = () => {
-    if(S.layer === "streets"){ map.removeLayer(layers.streets); layers.sat.addTo(map); S.layer = "sat"; $("#layerBtn").textContent = "🗺 Streets"; }
-    else { map.removeLayer(layers.sat); layers.streets.addTo(map); S.layer = "streets"; $("#layerBtn").textContent = "🛰 Satellite"; }
+  // Map choices: built-in offline street map (if present), satellite (online), online streets.
+  const LAYER_ORDER = ["offline", "sat", "streets"];
+  const LAYER_LABEL = {offline:"🗺 Offline map", sat:"🛰 Satellite", streets:"🌐 Online streets"};
+  $("#layerBtn").onclick = async () => {
+    const avail = LAYER_ORDER.filter(k => k !== "offline" || layers.offline);
+    const next = avail[(avail.indexOf(S.layer) + 1) % avail.length];
+    await setLayer(next);
     try{ localStorage.setItem("he-layer", S.layer); }catch(e){}
   };
-  try{ if(localStorage.getItem("he-layer") === "sat") $("#layerBtn").click(); }catch(e){}
+  window.setLayer = async k => {
+    if(k === "offline" && !layers.offline) k = "streets";
+    for(const v of Object.values(layers)) if(v && map.hasLayer(v)) map.removeLayer(v);
+    layers[k].addTo(map); S.layer = k; $("#layerBtn").textContent = LAYER_LABEL[k];
+  };
+  let saved = null; try{ saved = localStorage.getItem("he-layer"); }catch(e){}
+  setLayer(saved === "sat" || saved === "streets" ? saved : "streets");
+  loadOfflineMap().then(ok => { if(ok && (saved === "offline" || !saved || !navigator.onLine)) setLayer("offline"); });
+  window.addEventListener("offline", () => { if(S.layer !== "offline" && layers.offline){ setLayer("offline"); toast("No internet: switched to the offline map."); } });
   $("#meBtn").onclick = () => { if(S.me) map.flyTo([S.me.lat, S.me.lng], Math.max(map.getZoom(), 18)); else toast("No location yet. Check that location is allowed for this site."); };
   $("#fitBtn").onclick = () => { const pts = liveItems().filter(i => i.lat != null).map(i => [i.lat, i.lng]);
     if(pts.length) map.fitBounds(pts, {padding:[40,40], maxZoom:18}); else toast("Nothing pinned yet."); };
   $("#placeCancel").onclick = endPlacing;
   $("#placeOk").onclick = () => { const c = map.getCenter(); const it = S.items.get(S.placing);
     if(it) setPin(it, c.lat, c.lng, null, "map"); endPlacing(); };
+}
+// Offline street map of the Three Cities (OpenStreetMap data via Protomaps), read from one bundled file.
+async function loadOfflineMap(){
+  try{
+    if(!window.pmtiles || !window.protomapsL) return false;
+    const r = await fetch("map/three-cities.pmtiles"); if(!r.ok) return false;
+    const file = new File([await r.blob()], "three-cities.pmtiles");
+    const src = new pmtiles.PMTiles(new pmtiles.FileSource(file));
+    await src.getHeader();
+    layers.offline = protomapsL.leafletLayer({url:src, flavor:"light", lang:"en", maxDataZoom:15, maxZoom:21,
+      attribution:'<a href="https://protomaps.com">Protomaps</a> © <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>'});
+    return true;
+  }catch(e){ console.warn("offline map unavailable", e); return false; }
 }
 function markerIcon(it){
   const sel = S.sel === it.id ? " sel" : "";
@@ -310,9 +381,28 @@ function startPlacing(id){
 function endPlacing(){ S.placing = null; $("#cross").style.display = "none"; $("#placebar").style.display = "none"; }
 
 /* ============ location ============ */
-function startGeo(){
+async function startGeo(){
+  if(NATIVE && GEO){
+    try{ await GEO.requestPermissions(); }catch(e){}
+    try{
+      await GEO.watchPosition({enableHighAccuracy:true, timeout:30000, maximumAge:4000}, (p, err) => {
+        if(err || !p){ const m = String(err && (err.message || err) || "");
+          setLocChip(/denied|permission/i.test(m) ? "📍 Location blocked" : "📍 No fix yet", "bad");
+          if(/denied|permission/i.test(m)) toast("Location is off for Hunt Editor. Allow it in Android Settings › Apps › Hunt Editor › Permissions.", 6000);
+          else if(/disabled|services/i.test(m)) toast("Turn on Location in Android's quick settings.", 5000);
+          return; }
+        onPosition(p);
+      });
+    }catch(e){ setLocChip("📍 No location", "bad"); }
+    return;
+  }
   if(!("geolocation" in navigator)){ setLocChip("No location on this device", "bad"); return; }
-  navigator.geolocation.watchPosition(p => {
+  navigator.geolocation.watchPosition(onPosition, err => {
+    setLocChip(err.code === 1 ? "📍 Location blocked" : "📍 No fix yet", "bad");
+    if(err.code === 1) toast("Location is blocked. Allow it in the browser's site settings (padlock icon).", 6000);
+  }, {enableHighAccuracy:true, maximumAge:4000, timeout:30000});
+}
+function onPosition(p){
     S.me = {lat:p.coords.latitude, lng:p.coords.longitude, acc:p.coords.accuracy, t:p.timestamp};
     const ll = [S.me.lat, S.me.lng];
     if(!meMarker){
@@ -324,18 +414,14 @@ function startGeo(){
     setLocChip(`📍 ±${a} m`, a <= 15 ? "good" : a <= 40 ? "warn" : "bad");
     const t = now();
     if(t - (startGeo.last || 0) > 2500){ startGeo.last = t; if(S.f.sort === "near") renderList(); if(S.sel) renderLocBlock(); }
-  }, err => {
-    setLocChip(err.code === 1 ? "📍 Location blocked" : "📍 No fix yet", "bad");
-    if(err.code === 1) toast("Location is blocked. Allow it in the browser's site settings (padlock icon).", 6000);
-  }, {enableHighAccuracy:true, maximumAge:4000, timeout:30000});
 }
 function setLocChip(text, cls){ const c = $("#locChip"); c.textContent = text; c.className = "chip " + (cls || ""); }
 $("#locChip").onclick = () => {
   const a = S.me ? Math.round(S.me.acc) : null;
   modal(`<h2>Your location</h2>
   ${S.me ? `<p>Accuracy right now: <b>±${a} m</b> (the blue circle on the map).</p>` : "<p>No location yet.</p>"}
-  <p>This tablet has no GPS chip, so it works out where you are from nearby Wi‑Fi networks. That needs an internet connection (for example your phone's hotspot) and is often 20 to 50 m out in narrow streets.</p>
-  <p>For exact pins, use <b>Place on map</b>: switch to Satellite, put the red cross on the doorway and tap Set pin. Or open this same app on your phone, which has GPS.</p>
+  <p>This tablet has no GPS chip, so it works out where you are from nearby Wi‑Fi networks. That needs an internet connection (for example your phone's hotspot) and is often 20 to 50 m out in narrow streets. With no internet at all it usually can't tell where you are.</p>
+  <p>For exact pins, use <b>Place on map</b>: put the red cross on the doorway and tap Set pin. The offline map works with no internet; Satellite needs internet.</p>
   <div class="btns"><button class="btn primary" onclick="closeModal()">OK</button></div>`);
 };
 
@@ -503,7 +589,30 @@ function lightbox(src, caption, photoId){
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null, recBtn = null;
 function stopDictation(){ if(rec){ try{ rec.stop(); }catch(e){} } }
+function appendSpoken(el, t){
+  const v = el.value; el.value = v + (v && !/\s$/.test(v) ? (el.id === "fld-notes" ? "\n" : " ") : "") + t;
+  el.dispatchEvent(new Event("input"));
+}
+// Android app: the phone's own speech recogniser (works offline once Android's offline speech pack is downloaded).
+async function nativeDictation(btn){
+  const el = document.getElementById(btn.dataset.for), interim = document.getElementById("int-" + btn.dataset.for);
+  try{
+    const av = await SPEECH.available();
+    if(!av || !av.available){ interim.textContent = "Voice recognition isn't set up on this tablet. The 🎤 key on the keyboard also works."; return; }
+    try{ const p = await SPEECH.requestPermissions(); if(p && p.speechRecognition && p.speechRecognition !== "granted"){ interim.textContent = "Microphone permission is off. Allow it in Android Settings › Apps › Hunt Editor."; return; } }catch(e){}
+    btn.classList.add("live"); btn.textContent = "■"; interim.textContent = "Listening…";
+    const res = await SPEECH.start({language:S.lang, maxResults:1, prompt:"Speak now", partialResults:false, popup:true});
+    const t = ((res && res.matches && res.matches[0]) || "").trim();
+    if(t && el){ appendSpoken(el, t); interim.textContent = "✓ Added"; setTimeout(() => { if(interim.textContent === "✓ Added") interim.textContent = ""; }, 2000); }
+    else interim.textContent = "Didn't catch that. Tap 🎤 and try again.";
+  }catch(e){
+    const m = String(e && (e.message || e) || "");
+    interim.textContent = /network|offline/i.test(m) ? "Voice needs internet, or Android's offline speech pack (see ☰ › Voice language)." :
+      /no match|didn't|7/i.test(m) ? "Didn't catch that. Tap 🎤 and try again." : "Voice error: " + m;
+  }finally{ btn.classList.remove("live"); btn.textContent = "🎤"; }
+}
 function toggleDictation(btn){
+  if(NATIVE && SPEECH){ nativeDictation(btn); return; }
   if(rec && recBtn === btn){ stopDictation(); return; }
   stopDictation();
   if(!SR){ toast("Voice typing isn't available in this browser. Use the 🎤 key on the keyboard instead.", 5000); return; }
@@ -618,17 +727,156 @@ async function buildBackup(){
   const refPhotos = {}; for(const k of await DB.keys("refphotos")) refPhotos[k] = await DB.get("refphotos", k);
   return {format:"hunt-editor-backup/1", exportedAt:now(), device:navigator.userAgent, meta:S.meta, items:[...S.items.values()], refPhotos, photos};
 }
-async function saveBackup(share){
-  toast("Preparing backup…");
-  const data = await buildBackup(); const name = `hunt-backup-${stamp()}.json`;
-  const blob = new Blob([JSON.stringify(data)], {type:"application/json"});
-  const file = new File([blob], name, {type:"application/json"});
-  if(share && navigator.canShare && navigator.canShare({files:[file]})){
-    try{ await navigator.share({files:[file], title:name}); }catch(e){ if(e.name === "AbortError") return; download(blob, name); }
-  } else download(blob, name);
-  S.meta.lastBackup = now(); await saveMeta(); updateBackupChip();
-  toast(`Backup saved: ${name} (${(blob.size/1048576).toFixed(1)} MB)`, 4000);
+/* ============ saved versions (timestamped, everything collected) ============ */
+// A version is one file with everything: items, pins, statuses, notes, old and new photos.
+async function saveVersion(kind = "manual", opts = {}){
+  flushSaves();
+  const data = await buildBackup();
+  data.versionKind = kind;
+  const name = `hunt-${stamp()}${kind === "auto" ? "-auto" : ""}.json`;
+  const text = JSON.stringify(data);
+  let where = null, uri = null;
+  if(!opts.noLocal){
+    if(NATIVE){ const r = await writeTabletFile(name, text); where = r.where; uri = r.uri; }
+    else { download(new Blob([text], {type:"application/json"}), name); where = "your Downloads folder"; }
+    S.meta.lastBackup = now();
+  }
+  S.meta.versions = [...(S.meta.versions || []), {name, savedAt:now(), size:text.length, kind, where, uri}].slice(-300);
+  await saveMeta(); updateBackupChip(); updateCloudChip();
+  if(kind === "auto") pruneAutoVersions();
+  else if(!opts.quiet && where) toast(`Saved ${name} (${(text.length/1048576).toFixed(1)} MB) to ${where}`, 5000);
+  return {name, text, uri, where};
 }
+async function pruneAutoVersions(keep = 10){
+  if(!NATIVE) return;
+  try{ const autos = (await listTabletVersions()).filter(f => /-auto\.json$/i.test(f.name));
+    for(const f of autos.slice(keep)) await FS.deleteFile({path:`${FOLDER}/${f.name}`, directory:f.dir}).catch(() => {}); }catch(e){}
+}
+// In the Android app, save an automatic version when you leave the app (at most every 10 minutes, only if something changed).
+async function autoVersion(){
+  if(!NATIVE || !S.meta) return;
+  const last = S.meta.lastAutoVersion || 0;
+  if((S.meta.lastChange || 0) <= Math.max(last, S.meta.lastBackup || 0) || now() - last < 10*60e3) return;
+  S.meta.lastAutoVersion = now();
+  try{ await saveVersion("auto", {quiet:true}); }catch(e){ console.warn("auto version failed", e); }
+}
+async function versionsScreen(){
+  if(!NATIVE){ toast("Saved versions are listed in the Android app. In Chrome they go to Downloads."); return; }
+  modal(`<h2>Saved versions</h2><p style="color:var(--muted)">Looking on the tablet…</p>`);
+  const files = await listTabletVersions();
+  const up = new Set((S.meta?.versions || []).filter(v => v.uploadedAt).map(v => v.name));
+  modal(`<h2>Saved versions</h2>
+    <p style="font-size:14px;color:var(--muted)">Kept in ${files.some(f => f.dir === "DOCUMENTS") ? `Documents › ${FOLDER}` : "the app's storage"} on this tablet. Automatic versions (marked auto) are made when you leave the app; the newest 10 are kept.</p>
+    ${files.length ? `<div class="menu">${files.map((f, k) => `<div style="padding:10px 4px;border-bottom:1px solid #eef1f4">
+      <b>${esc(f.name)}</b> ${up.has(f.name) ? "☁" : ""}<br><small style="color:var(--muted)">${f.mtime ? fmtTime(f.mtime) : ""}${f.size ? " · " + (f.size/1048576).toFixed(1) + " MB" : ""}</small>
+      <div class="btns" style="margin-top:6px"><button class="btn" data-load="${k}">📂 Load</button><button class="btn" data-share="${k}">📤 Share</button></div></div>`).join("")}</div>`
+      : `<p>No versions saved yet. Use ☰ › Save a version now.</p>`}
+    <div class="btns" style="margin-top:12px"><button class="btn" onclick="closeModal()">Close</button></div>`, () => {
+    document.querySelectorAll("[data-load]").forEach(b => b.onclick = async () => {
+      const f = files[+b.dataset.load];
+      try{ const r = await FS.readFile({path:`${FOLDER}/${f.name}`, directory:f.dir, encoding:"utf8"});
+        closeModal(); await importData(JSON.parse(r.data), f.name); }catch(e){ toast("Couldn't open that file: " + (e.message || e), 5000); }
+    });
+    document.querySelectorAll("[data-share]").forEach(b => b.onclick = async () => {
+      const f = files[+b.dataset.share]; let uri = f.uri;
+      if(!uri){ try{ uri = (await FS.getUri({path:`${FOLDER}/${f.name}`, directory:f.dir})).uri; }catch(e){} }
+      if(uri) shareTabletFile(uri, f.name); else toast("Couldn't find that file to share.");
+    });
+  });
+}
+
+/* ============ upload to GitHub (private repository) ============ */
+async function ghConfig(){ return (await DB.get("meta", "gh")) || null; }
+async function ghApi(gh, path, opts = {}){
+  const r = await fetch("https://api.github.com" + path, Object.assign({}, opts, {headers:Object.assign({
+    "Authorization":"Bearer " + gh.token, "Accept":"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28"},
+    opts.body ? {"Content-Type":"application/json"} : {})}));
+  if(!r.ok){ let msg = ""; try{ msg = (await r.json()).message || ""; }catch(e){}
+    const err = new Error(msg || ("HTTP " + r.status)); err.status = r.status; throw err; }
+  return r.status === 204 ? null : r.json();
+}
+function utf8ToB64(str){ const bytes = new TextEncoder().encode(str); let bin = "";
+  for(let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); }
+function ghError(e){
+  if(e.status === 401) return "GitHub refused the access key. Check it in ☰ › Upload settings.";
+  if(e.status === 404) return "Repository not found, or the access key can't see it. Check the name and the key's repository access.";
+  if(e.status === 403) return "The access key isn't allowed to write. It needs Contents: Read and write.";
+  if(e instanceof TypeError) return "Couldn't reach GitHub. Check the internet connection.";
+  return "Upload failed: " + e.message;
+}
+// Adds <folder>/<name> and updates <folder>/LATEST.txt in one commit. Works on an empty repository too.
+async function ghUpload(gh, name, text){
+  const R = `/repos/${encodeURIComponent(gh.owner)}/${encodeURIComponent(gh.repo)}`;
+  const info = await ghApi(gh, R);
+  const branch = info.default_branch || "main", dir = (gh.folder || "versions").replace(/^\/+|\/+$/g, "");
+  const b64 = utf8ToB64(text);
+  let ref = null;
+  try{ ref = await ghApi(gh, `${R}/git/ref/heads/${encodeURIComponent(branch)}`); }catch(e){ if(e.status !== 409 && e.status !== 404) throw e; }
+  if(!ref){ // empty repository: the contents API creates the first commit
+    await ghApi(gh, `${R}/contents/${dir}/${name}`, {method:"PUT", body:JSON.stringify({message:`Hunt version ${name}`, content:b64})});
+    await ghApi(gh, `${R}/contents/${dir}/LATEST.txt`, {method:"PUT", body:JSON.stringify({message:`Latest is ${name}`, content:utf8ToB64(name + "\n")})}).catch(() => {});
+    return {branch};
+  }
+  const base = await ghApi(gh, `${R}/git/commits/${ref.object.sha}`);
+  const blob = await ghApi(gh, `${R}/git/blobs`, {method:"POST", body:JSON.stringify({content:b64, encoding:"base64"})});
+  const tree = await ghApi(gh, `${R}/git/trees`, {method:"POST", body:JSON.stringify({base_tree:base.tree.sha, tree:[
+    {path:`${dir}/${name}`, mode:"100644", type:"blob", sha:blob.sha},
+    {path:`${dir}/LATEST.txt`, mode:"100644", type:"blob", content:name + "\n"}]})});
+  const commit = await ghApi(gh, `${R}/git/commits`, {method:"POST", body:JSON.stringify({message:`Hunt version ${name}`, tree:tree.sha, parents:[ref.object.sha]})});
+  await ghApi(gh, `${R}/git/refs/heads/${encodeURIComponent(branch)}`, {method:"PATCH", body:JSON.stringify({sha:commit.sha})});
+  return {branch};
+}
+let uploading = false;
+async function uploadNow(){
+  const gh = await ghConfig();
+  if(!gh || !gh.token){ ghSettings(); return; }
+  if(!navigator.onLine){ toast("No internet right now. Everything is safe on the tablet; upload when you're back online.", 5000); return; }
+  if(uploading) return; uploading = true; updateCloudChip();
+  toast("Saving a version and uploading…", 20000);
+  try{
+    const v = await saveVersion("upload", {quiet:true, noLocal:!NATIVE});
+    await ghUpload(gh, v.name, v.text);
+    const rec = (S.meta.versions || []).find(x => x.name === v.name); if(rec) rec.uploadedAt = now();
+    S.meta.lastUpload = now(); S.meta.lastUploadName = v.name; await saveMeta();
+    toast(`Uploaded ${v.name} to ${gh.owner}/${gh.repo}/${gh.folder || "versions"}`, 6000);
+  }catch(e){ toast(ghError(e), 7000); }
+  finally{ uploading = false; updateCloudChip(); }
+}
+async function updateCloudChip(){
+  const c = $("#cloudChip"), gh = await ghConfig();
+  if(!gh || !gh.token || !S.meta){ c.style.display = "none"; return; }
+  c.style.display = "";
+  if(uploading){ c.textContent = "☁ Uploading…"; c.className = "chip"; return; }
+  const pending = (S.meta.lastChange || 0) > (S.meta.lastUpload || 0);
+  if(!navigator.onLine){ c.textContent = pending ? "☁ Offline (upload later)" : "☁ Offline"; c.className = "chip"; return; }
+  c.textContent = pending ? "☁ Upload" : "☁ Uploaded " + ago(S.meta.lastUpload);
+  c.className = "chip " + (pending ? "warn" : "good");
+}
+$("#cloudChip").onclick = () => uploadNow();
+window.addEventListener("online", async () => { updateCloudChip(); const gh = await ghConfig();
+  if(gh && gh.token && S.meta && (S.meta.lastChange || 0) > (S.meta.lastUpload || 0)) toast("Back online. Tap ☁ Upload to send the latest version to GitHub.", 6000); });
+window.addEventListener("offline", updateCloudChip);
+async function ghSettings(){
+  const gh = (await ghConfig()) || {owner:"johnpcauchi", repo:"hunt-data", folder:"versions", token:""};
+  modal(`<h2>Upload settings</h2>
+    <p style="font-size:14px">Uploads go to a private GitHub repository. You need an access key (a "fine-grained personal access token") that can only write to that one repository.</p>
+    <label>GitHub account</label><input class="full gh" id="ghOwner" value="${esc(gh.owner)}" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <label>Repository</label><input class="full gh" id="ghRepo" value="${esc(gh.repo)}" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <label>Folder in the repository</label><input class="full gh" id="ghFolder" value="${esc(gh.folder || "versions")}" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <label>Access key</label><input class="full gh" id="ghToken" type="password" value="${esc(gh.token || "")}" placeholder="github_pat_…" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <p class="pwMsg" id="ghMsg" style="min-height:1.2em"></p>
+    <div class="btns"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn" id="ghTest">Test</button><button class="btn primary" id="ghSave">Save</button></div>
+    <p style="font-size:13px;color:var(--muted)">The key is kept only on this device and is never included in saved versions.</p>`, () => {
+    const read = () => ({owner:$("#ghOwner").value.trim(), repo:$("#ghRepo").value.trim(), folder:$("#ghFolder").value.trim() || "versions", token:$("#ghToken").value.trim()});
+    $("#ghTest").onclick = async () => { const g = read(); $("#ghMsg").style.color = ""; $("#ghMsg").textContent = "Checking…";
+      try{ const info = await ghApi(g, `/repos/${encodeURIComponent(g.owner)}/${encodeURIComponent(g.repo)}`);
+        $("#ghMsg").style.color = info.private ? "#2a9d6f" : "#c27a00";
+        $("#ghMsg").textContent = `✓ Connected to ${info.full_name}${info.private ? " (private)" : " — warning: this repository is PUBLIC, so anyone could read the answers"}.`; }
+      catch(e){ $("#ghMsg").style.color = "#c62828"; $("#ghMsg").textContent = ghError(e); } };
+    $("#ghSave").onclick = async () => { await DB.put("meta", read(), "gh"); closeModal(); updateCloudChip(); toast("Upload settings saved."); };
+  });
+}
+
 function exportCSV(){
   const cols = ["section","type","number","status","text","answer","points","lat","lng","accuracy_m","pin_source","notes","new_photos","changed_fields","last_edited","id"];
   const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
@@ -637,44 +885,49 @@ function exportCSV(){
     i.lat ?? "", i.lng ?? "", i.acc != null ? Math.round(i.acc) : "", i.pinSource || "", i.notes, S.photoCount.get(i.id) || 0,
     i.orig ? ["text","answer","points"].filter(k => (i[k] || "") !== (i.orig[k] || "")).join(" ") : "new item",
     i.updatedAt ? new Date(i.updatedAt).toISOString() : "", i.id].map(q).join(",")));
-  download(new Blob(["﻿" + lines.join("\r\n")], {type:"text/csv"}), `hunt-${stamp()}.csv`);
+  deliverFile("\ufeff" + lines.join("\r\n"), `hunt-${stamp()}.csv`, "text/csv", "exports");
 }
 async function countPhotos(){ S.photoCount = new Map(); for(const p of await DB.all("photos")) S.photoCount.set(p.itemId, (S.photoCount.get(p.itemId) || 0) + 1); }
 function updateBackupChip(){
   const c = $("#bkChip"); if(!S.meta){ c.textContent = "💾 –"; c.className = "chip"; return; }
   const lb = S.meta.lastBackup, lc = S.meta.lastChange || 0;
   const stale = lc > (lb || 0);
-  c.textContent = "💾 " + (lb ? "Backup " + ago(lb) : "No backup yet");
+  c.textContent = "💾 " + (lb ? "Saved " + ago(lb) : "Not saved yet");
   c.className = "chip " + (stale ? ((now() - (lb || 0) > 3*3600e3) ? "bad" : "warn") : "good");
 }
-setInterval(updateBackupChip, 60000);
+setInterval(() => { updateBackupChip(); updateCloudChip(); autoVersion(); }, 60000);
 $("#bkChip").onclick = () => menu();
 
 /* ============ menu ============ */
 function menu(){
   const lb = S.meta?.lastBackup;
   modal(`<h2>Menu</h2><div class="menu">
-    <button id="m1">💾 Save backup file<small>Everything (edits, pins, photos) in one file. Last backup: ${ago(lb)}.</small></button>
-    ${navigator.canShare ? `<button id="m2">📤 Share backup<small>Send the backup to OneDrive, Drive, your phone, or email.</small></button>` : ""}
-    <button id="m3">📂 Load hunt or backup file<small>Loads a hunt file, or merges a backup from another device. The newest version of each item wins.</small></button>
+    <button id="m1">💾 Save a version now<small>Everything (edits, pins, statuses, notes, photos) in one file named with the date and time${NATIVE ? `, kept in Documents › ${FOLDER}` : ", saved to Downloads"}. Last saved: ${ago(lb)}.</small></button>
+    <button id="m2">☁ Upload the latest version to GitHub<small>Saves a version and sends it to your private repository. Needs internet.${S.meta?.lastUpload ? " Last upload: " + ago(S.meta.lastUpload) + "." : ""}</small></button>
+    ${NATIVE ? `<button id="m9">📚 Saved versions<small>Open or share a version saved on this tablet.</small></button>` : ""}
+    <button id="m3">📂 Open a hunt or version file<small>Pick a file. A hunt file updates the wording; a saved version merges, and the newest edit of each item wins.</small></button>
     <button id="m4">📄 Export spreadsheet (CSV)<small>All items with answers, coordinates and status, for Excel.</small></button>
     <button id="m5">📝 Hunt intro text<small>Read or edit the introduction given to teams.</small></button>
-    <button id="m6">🎤 Voice language: ${esc(S.lang)}<small>Language used for speaking into fields.</small></button>
-    <button id="m7">ℹ️ How this works<small>Storage, location and tips.</small></button>
-    <button id="m8" style="color:#c62828">🗑 Erase everything on this device<small>Only do this after saving a backup.</small></button>
+    <button id="m6">🎤 Voice language: ${esc(S.lang)}<small>Language used for speaking into boxes${NATIVE ? ", and how to make voice work offline" : ""}.</small></button>
+    <button id="m10">⚙️ Upload settings<small>Your private GitHub repository and access key.</small></button>
+    <button id="m7">ℹ️ How this works<small>Storage, location, voice and uploads.</small></button>
+    <button id="m8" style="color:#c62828">🗑 Erase everything on this device<small>Only do this after saving a version.</small></button>
   </div><div class="btns" style="margin-top:12px"><button class="btn" onclick="closeModal()">Close</button></div>`, () => {
-    $("#m1").onclick = () => { closeModal(); saveBackup(false); };
-    if($("#m2")) $("#m2").onclick = () => { closeModal(); saveBackup(true); };
+    $("#m1").onclick = () => { closeModal(); saveVersion("manual").catch(e => toast("Couldn't save: " + (e.message || e), 6000)); };
+    $("#m2").onclick = () => { closeModal(); uploadNow(); };
+    if($("#m9")) $("#m9").onclick = versionsScreen;
     $("#m3").onclick = () => { closeModal(); openFile(); };
     $("#m4").onclick = () => { closeModal(); exportCSV(); };
     $("#m5").onclick = introEditor;
     $("#m6").onclick = () => modal(`<h2>Voice language</h2><select class="full" id="lang">
         ${[["en-GB","English (UK)"],["en-US","English (US)"],["mt-MT","Maltese"],["it-IT","Italian"]].map(([v, l]) => `<option value="${v}" ${S.lang === v ? "selected" : ""}>${l}</option>`).join("")}</select>
-        <p style="font-size:14px;color:var(--muted)">If voice typing is unreliable, the 🎤 key on the Android keyboard works in every box too.</p>
+        ${NATIVE ? `<p style="font-size:14px"><b>Voice with no internet:</b> Android needs its offline speech pack for your language. Open Android <b>Settings</b>, search for <b>offline speech</b> (or open the Google app › Settings › Voice › Offline speech recognition) and download English (UK). After that, 🎤 works with no connection.</p>` : ""}
+        <p style="font-size:14px;color:var(--muted)">The 🎤 key on the Android keyboard also works in every box.</p>
         <div class="btns"><button class="btn primary" id="langOk">Save</button></div>`,
         () => $("#langOk").onclick = () => { S.lang = $("#lang").value; try{ localStorage.setItem("he-lang", S.lang); }catch(e){} closeModal(); toast("Voice language: " + S.lang); });
+    $("#m10").onclick = ghSettings;
     $("#m7").onclick = help;
-    $("#m8").onclick = () => modal(`<h2>Erase everything?</h2><p>This removes all items, pins and photos from this device. It cannot be undone unless you have a backup file.</p>
+    $("#m8").onclick = () => modal(`<h2>Erase everything?</h2><p>This removes all items, pins and photos from this device. Saved version files are not deleted. It cannot be undone unless you have a saved version.</p>
       <div class="btns"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn danger" id="eraseOk">Erase</button></div>`,
       () => $("#eraseOk").onclick = async () => { await DB.clear(); location.reload(); });
   });
@@ -689,10 +942,11 @@ function introEditor(){
 }
 function help(){
   modal(`<h2>How this works</h2>
-  <p><b>Where your data lives.</b> Everything is saved on this device as you type, even with no internet. Nothing is sent anywhere. Save a backup file regularly (the 💾 chip turns orange when you have unsaved changes), and keep it somewhere safe such as OneDrive.</p>
-  <p><b>Tablet and phone.</b> Each device keeps its own copy. To combine them, save a backup on one device and load it on the other. Items edited on both devices keep the most recent edit.</p>
-  <p><b>Location.</b> The blue dot shows where the device thinks you are, and the circle shows how unsure it is. Use <b>Pin at my location</b> when the circle is small, or <b>Place on map</b> for an exact spot. When an item is open, you can drag its pin.</p>
-  <p><b>Voice.</b> Tap 🎤 next to a box, speak, and pause. Your words are added to the end of that box. It needs internet.</p>
+  <p><b>Where your data lives.</b> Everything is saved on this ${NATIVE ? "tablet" : "device"} as you type, with or without internet. ${NATIVE ? `<b>Save a version now</b> writes one file with everything, named with the date and time, to Documents › ${FOLDER}. The app also saves an automatic version when you leave it.` : "Save a version regularly; it downloads one file with everything."}</p>
+  <p><b>Uploading.</b> When you have internet, tap <b>☁ Upload</b> at the top (or ☰ › Upload). It saves a version and sends it to the <i>versions</i> folder of your private GitHub repository. Set the repository and access key in ☰ › Upload settings.</p>
+  <p><b>Location.</b> The blue dot shows where the ${NATIVE ? "tablet" : "device"} thinks you are; the circle shows how unsure it is. This tablet has no GPS, so it needs internet to find itself. With no internet, use <b>Place on map</b> on the offline map.</p>
+  <p><b>Voice.</b> Tap 🎤 next to a box and speak. Your words are added to the end of that box. ${NATIVE ? "With Android's offline speech pack downloaded (☰ › Voice language), it works with no internet." : "In Chrome it needs internet."}</p>
+  <p><b>Maps.</b> The map button switches between the offline map (works anywhere in the Three Cities with no internet), Satellite and online streets.</p>
   <p><b>Status colours.</b> ${Object.values(STATUS).map(s => `<span style="display:inline-block;padding:2px 8px;border-radius:6px;color:#fff;background:${s.color};margin:2px">${s.label}</span>`).join(" ")}</p>
   <div class="btns"><button class="btn primary" onclick="closeModal()">OK</button></div>`);
 }
@@ -701,11 +955,12 @@ function help(){
 function showWelcome(){
   $("#side").innerHTML = `<div style="overflow:auto;padding:12px"><div class="welcome" style="margin:10px auto">
     <h2>Welcome</h2>
-    <p>To start, load your hunt file. It holds the clues, answers and old photos. It's kept on this device and never uploaded.</p>
-    <div class="btns"><button class="btn primary" id="wLoad">📂 Load hunt file</button><button class="btn" id="wEmpty">Start an empty hunt</button></div>
-    <p style="font-size:14px;color:var(--muted);margin-top:16px">Tip: in Chrome's ⋮ menu choose <b>Add to Home screen</b> so it opens like an app.</p>
+    <p>To start, load your hunt file (<b>Three Cities hunt.hunt.json</b>) or a version you saved earlier. It holds the clues, answers and old photos, and stays on this ${NATIVE ? "tablet" : "device"}.</p>
+    <div class="btns"><button class="btn primary" id="wLoad">📂 Load hunt file</button>${NATIVE ? `<button class="btn" id="wVers">📚 Saved versions</button>` : ""}<button class="btn" id="wEmpty">Start an empty hunt</button></div>
+    ${NATIVE ? "" : `<p style="font-size:14px;color:var(--muted);margin-top:16px">Tip: in Chrome's ⋮ menu choose <b>Add to Home screen</b> so it opens like an app.</p>`}
   </div></div>`;
   $("#wLoad").onclick = openFile;
+  if($("#wVers")) $("#wVers").onclick = versionsScreen;
   $("#wEmpty").onclick = async () => { S.meta = {title:"Treasure Hunt", intro:"", sections:DEFAULT_SECTIONS, created:now()}; await saveMeta(); location.reload(); };
 }
 let sideHTML;
@@ -731,11 +986,12 @@ async function boot(){
   if(!S.meta){ showWelcome(); }
   else { renderFilters(); renderList(); drawMarkers(); const pts = liveItems().filter(i => i.lat != null);
     if(pts.length) map.fitBounds(pts.map(i => [i.lat, i.lng]), {padding:[40,40], maxZoom:18}); }
-  updateBackupChip(); startGeo();
-  if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+  updateBackupChip(); updateCloudChip(); startGeo();
+  if(!NATIVE && "serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+  document.body.classList.toggle("native", NATIVE);
 }
 window.addEventListener("pagehide", flushSaves);
-document.addEventListener("visibilitychange", () => { if(document.visibilityState === "hidden") flushSaves(); });
+document.addEventListener("visibilitychange", () => { if(document.visibilityState === "hidden"){ flushSaves(); autoVersion(); } else updateCloudChip(); });
 boot();
 </script>
 </body>
