@@ -567,11 +567,28 @@ async function importData(data, fname){
   if(!S.meta) S.meta = {title:incomingMeta.title || "Treasure Hunt", intro:incomingMeta.intro || "", sections:incomingMeta.sections || DEFAULT_SECTIONS, created:now()};
   else if(incomingMeta.introUpdatedAt && incomingMeta.introUpdatedAt > (S.meta.introUpdatedAt || 0)){ S.meta.intro = incomingMeta.intro; S.meta.introUpdatedAt = incomingMeta.introUpdatedAt; }
   let added = 0, updated = 0, kept = 0;
-  const pairs = [];
+  const pairs = [], clashes = [];
+  const isHuntFile = data.format === "hunt-editor/1";
+  // Content comes from the hunt file; field work (status, pin, notes, photos) belongs to the device.
+  const CONTENT = ["type", "section", "number", "text", "answer", "points", "refPhoto", "sheetNo", "flags", "orig"];
+  const editedHere = it => it.orig && ["text", "answer", "points"].some(k => (it[k] || "") !== (it.orig[k] || ""));
   for(const raw of data.items){
     const inc = Object.assign({status:"unchecked", flags:[], notes:"", updatedAt:0}, raw);
     const cur = S.items.get(inc.id);
-    if(!cur){ S.items.set(inc.id, inc); pairs.push([null, inc]); added++; }
+    if(!cur){ S.items.set(inc.id, inc); pairs.push([null, inc]); added++; continue; }
+    if(isHuntFile){
+      const differs = ["type", "section", "number", "text", "answer", "points", "refPhoto"].some(k => JSON.stringify(cur[k] ?? null) !== JSON.stringify(inc[k] ?? null))
+        || JSON.stringify(cur.orig || null) !== JSON.stringify(inc.orig || null);
+      if(!differs){ kept++; continue; }
+      if(editedHere(cur)){
+        // You changed the wording on this device: keep yours, and show the file's wording as a note to compare.
+        const msg = `The updated hunt file has different wording here. Yours was kept. File version: ${[inc.text, inc.answer && "Answer: " + inc.answer].filter(Boolean).join(" | ")}`;
+        if(!(cur.flags || []).includes(msg)){ cur.flags = [...(cur.flags || []), msg]; cur.updatedAt = now(); pairs.push([null, cur]); }
+        clashes.push(label(cur)); kept++; continue;
+      }
+      const merged = Object.assign({}, cur); for(const k of CONTENT) if(k in inc) merged[k] = inc[k];
+      merged.updatedAt = now(); S.items.set(merged.id, merged); pairs.push([null, merged]); updated++;
+    }
     else if((inc.updatedAt || 0) > (cur.updatedAt || 0)){ S.items.set(inc.id, inc); pairs.push([null, inc]); updated++; }
     else kept++;
   }
@@ -588,7 +605,11 @@ async function importData(data, fname){
   if(data.format === "hunt-editor-backup/1" && !had) S.meta.lastBackup = data.exportedAt;
   await saveMeta(); await countPhotos();
   showApp(); renderFilters(); renderList(); drawMarkers(); updateBackupChip();
-  if(had) modal(`<h2>Merged</h2><p>From <b>${esc(fname)}</b>:</p><ul><li>${added} new items added</li><li>${updated} items updated (the file's version was newer)</li><li>${kept} items kept as they were on this device</li><li>${ph} new photos</li></ul><div class="btns"><button class="btn primary" onclick="closeModal()">OK</button></div>`);
+  if(had) modal(`<h2>${isHuntFile ? "Hunt file updated" : "Merged"}</h2><p>From <b>${esc(fname)}</b>:</p><ul><li>${added} new items added</li>
+    <li>${updated} items updated ${isHuntFile ? "with the file's wording (your pins, statuses, notes and photos were kept)" : "(the file's version was newer)"}</li>
+    <li>${kept} items unchanged</li>${ph ? `<li>${ph} new photos</li>` : ""}</ul>
+    ${clashes.length ? `<p>⚠️ You had edited the wording of <b>${clashes.map(esc).join(", ")}</b> on this device, so your version was kept. Open each one to compare it with the file's version.</p>` : ""}
+    <div class="btns"><button class="btn primary" onclick="closeModal()">OK</button></div>`);
   else toast(`Loaded ${added} items${ph ? " and " + ph + " photos" : ""}.`, 4000);
 }
 async function buildBackup(){

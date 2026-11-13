@@ -1,7 +1,7 @@
 // Keeps the app itself available when the connection drops.
 // Network first (so updates show up straight away), cached copy when offline.
 // Map tiles are left to the browser's normal cache.
-const CACHE = "hunt-editor-shell-v1";
+const CACHE = "hunt-editor-shell-v2";
 const SHELL = ["./", "index.html", "lib/leaflet.js", "lib/leaflet.css", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", e => {
