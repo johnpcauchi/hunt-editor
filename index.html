@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hunt Editor</title>
+<meta name="theme-color" content="#16324f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="lib/leaflet.css">
+<script src="lib/leaflet.js"></script>
+<style>
+:root{
+  --ink:#1b2430; --muted:#5f6b7a; --line:#d9dee5; --bg:#f4f6f8; --card:#fff;
+  --brand:#16324f; --accent:#1f6feb;
+  --st-unchecked:#7b8794; --st-ok:#2a9d6f; --st-changed:#e09a1a; --st-gone:#d23b3b; --st-new:#7b3fe4;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);font-size:16px}
+button{font:inherit;cursor:pointer}
+header{height:56px;display:flex;align-items:center;gap:10px;padding:0 12px;background:var(--brand);color:#fff}
+header h1{font-size:18px;margin:0;font-weight:600;white-space:nowrap}
+header .grow{flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.14);font-size:14px;white-space:nowrap;border:0;color:inherit}
+.chip.warn{background:#f2b33d;color:#2b1d00}
+.chip.bad{background:#e05656;color:#fff}
+.chip.good{background:#2a9d6f;color:#fff}
+.hbtn{background:rgba(255,255,255,.14);border:0;color:#fff;border-radius:10px;padding:8px 12px;font-size:15px}
+.hbtn.primary{background:#f2b33d;color:#2b1d00;font-weight:600}
+main{position:absolute;top:56px;left:0;right:0;bottom:0;display:flex}
+#side{width:440px;max-width:48vw;background:var(--card);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+#mapwrap{flex:1;position:relative;min-width:0}
+#map{position:absolute;inset:0}
+@media (max-width:820px){
+  main{flex-direction:column-reverse}
+  #side{width:auto;max-width:none;flex:1;border-right:0;border-top:1px solid var(--line)}
+  #mapwrap{flex:0 0 42vh}
+  header h1{display:none}
+  header{gap:6px;padding:0 8px}
+  .chip{padding:6px 8px;font-size:13px}
+  .hbtn{padding:8px 10px;font-size:14px}
+  #newBtn .lbl{display:none}
+}
+/* list */
+.filters{padding:10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:14px;color:var(--ink)}
+.seg button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.row2{display:flex;gap:8px}
+.row2 input,.row2 select{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;font-size:15px;background:#fff}
+#summary{font-size:13px;color:var(--muted);padding:0 2px}
+#list{flex:1;overflow:auto;min-height:0}
+.item{display:flex;gap:10px;padding:10px 12px;border-bottom:1px solid #eef1f4;align-items:flex-start;cursor:pointer}
+.item:active,.item.sel{background:#eef4ff}
+.item .bar{width:6px;align-self:stretch;border-radius:3px;flex:none}
+.item .body{flex:1;min-width:0}
+.item .t1{font-weight:600;font-size:15px;display:flex;gap:6px;align-items:center}
+.item .t2{color:var(--muted);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .right{font-size:13px;color:var(--muted);text-align:right;white-space:nowrap}
+.tag{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;padding:2px 6px;border-radius:6px;background:#eef1f4;color:var(--muted)}
+.empty{padding:30px 20px;color:var(--muted);text-align:center}
+/* detail */
+#detail{flex:1;overflow:auto;min-height:0;display:none}
+#side.detail .filters,#side.detail #list{display:none}
+#side.detail #detail{display:block}
+.dhead{position:sticky;top:0;background:#fff;z-index:2;display:flex;align-items:center;gap:8px;padding:10px;border-bottom:1px solid var(--line)}
+.dhead .ttl{flex:1;font-weight:700;font-size:17px}
+.ibtn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 12px;font-size:16px;color:var(--ink)}
+.sec{padding:12px;border-bottom:1px solid #eef1f4}
+.sec h3{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:flex;align-items:center;gap:8px}
+.flag{background:#fff6d9;border:1px solid #f0d78a;border-radius:10px;padding:8px 10px;font-size:14px;margin-bottom:6px}
+.status{display:flex;gap:6px;flex-wrap:wrap}
+.status button{flex:1;min-width:66px;border:2px solid var(--line);background:#fff;border-radius:10px;padding:10px 6px;font-weight:600;font-size:14px;color:var(--ink)}
+.status button.on{color:#fff}
+.field{position:relative}
+.field textarea,.field input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 52px 10px 10px;font:inherit;font-size:16px;line-height:1.4;resize:vertical;background:#fff}
+.field textarea{min-height:60px}
+.mic{position:absolute;right:6px;top:6px;width:40px;height:40px;border-radius:50%;border:0;background:#eef1f4;font-size:19px;display:flex;align-items:center;justify-content:center}
+.mic.live{background:#e05656;color:#fff;animation:pulse 1s infinite}
+@keyframes pulse{50%{transform:scale(1.08)}}
+.interim{font-size:14px;color:var(--accent);min-height:0;margin-top:4px}
+.loc{font-size:15px;margin-bottom:8px}
+.loc small{color:var(--muted)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 14px;font-size:15px;color:var(--ink);text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.danger{color:#c62828;border-color:#f1c6c6}
+.btn:disabled{opacity:.45}
+.photos{display:flex;gap:8px;flex-wrap:wrap}
+.photos img{width:110px;height:110px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+.refimg{max-width:100%;max-height:260px;border-radius:10px;border:1px solid var(--line);display:block}
+.orig{font-size:14px;background:#f6f7f9;border-radius:10px;padding:8px 10px;white-space:pre-wrap;color:var(--muted)}
+/* map */
+.mapctl{position:absolute;right:10px;top:10px;z-index:500;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.mapctl button{border:0;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3);border-radius:10px;padding:9px 12px;font-size:15px;color:var(--ink)}
+.mapctl button.on{background:var(--brand);color:#fff}
+.mk{display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);min-width:34px;padding:0 6px;height:26px;border-radius:13px;white-space:nowrap;transform:translate(-50%,-50%);position:absolute;left:0;top:0}
+.mk.picture{border-radius:5px}
+.mk.photo{border-radius:13px 13px 13px 2px}
+.mk.sel{outline:3px solid #111;transform:translate(-50%,-50%) scale(1.3)}
+.me-dot{width:18px;height:18px;border-radius:50%;background:#1f6feb;border:3px solid #fff;box-shadow:0 0 0 2px rgba(31,111,235,.4),0 1px 4px rgba(0,0,0,.4)}
+#cross{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;z-index:600;pointer-events:none;display:none}
+#cross:before,#cross:after{content:"";position:absolute;background:#e0245e;box-shadow:0 0 0 1px #fff}
+#cross:before{left:21px;top:0;width:3px;height:44px}
+#cross:after{top:21px;left:0;height:3px;width:44px}
+#placebar{position:absolute;left:10px;right:10px;bottom:24px;z-index:700;background:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,.3);padding:12px;display:none;align-items:center;gap:10px;flex-wrap:wrap}
+#placebar .msg{flex:1;min-width:200px;font-size:15px}
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(10,20,30,.55);z-index:2000;display:none;align-items:center;justify-content:center;padding:16px}
+.modal.show{display:flex}
+.box{background:#fff;border-radius:16px;max-width:560px;width:100%;max-height:90vh;overflow:auto;padding:18px}
+.box h2{margin:0 0 10px;font-size:20px}
+.box p{margin:6px 0 12px;line-height:1.45}
+.menu button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #eef1f4;background:#fff;padding:14px 6px;font-size:16px;color:var(--ink)}
+.menu button small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+.lb img{max-width:100%;max-height:70vh;display:block;margin:0 auto 10px;border-radius:10px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b2430;color:#fff;padding:10px 16px;border-radius:12px;z-index:3000;font-size:15px;display:none;max-width:90vw}
+.welcome{max-width:640px;margin:40px auto;background:#fff;border-radius:18px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.welcome h2{margin-top:0}
+.welcome li{margin:6px 0;line-height:1.4}
+label.inline{display:flex;gap:8px;align-items:center;margin:8px 0}
+select.full{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}
+</style>
+</head>
+<body>
+<header>
+  <h1>Hunt Editor</h1>
+  <button class="chip" id="locChip" title="Your location">📍 Locating…</button>
+  <button class="chip" id="bkChip" title="Backup">💾 –</button>
+  <span class="grow"></span>
+  <button class="hbtn primary" id="newBtn">＋ New<span class="lbl"> here</span></button>
+  <button class="hbtn" id="menuBtn" aria-label="Menu">☰</button>
+</header>
+
+<main id="app">
+  <section id="side">
+    <div class="filters">
+      <div class="seg" id="fSection"></div>
+      <div class="seg" id="fType"></div>
+      <div class="row2">
+        <select id="fStatus">
+          <option value="all">All statuses</option>
+          <option value="unchecked">To check</option>
+          <option value="ok">Still OK</option>
+          <option value="changed">Changed</option>
+          <option value="gone">Gone</option>
+          <option value="new">New</option>
+          <option value="nopin">Not pinned yet</option>
+        </select>
+        <select id="fSort">
+          <option value="number">Sort: by number</option>
+          <option value="near">Sort: nearest first</option>
+          <option value="recent">Sort: last edited</option>
+        </select>
+      </div>
+      <div class="row2"><input id="fSearch" type="search" placeholder="Search clues, answers, notes…"></div>
+      <div id="summary"></div>
+    </div>
+    <div id="list"></div>
+    <div id="detail"></div>
+  </section>
+  <section id="mapwrap">
+    <div id="map"></div>
+    <div id="cross"></div>
+    <div class="mapctl">
+      <button id="layerBtn">🛰 Satellite</button>
+      <button id="meBtn">◎ Me</button>
+      <button id="fitBtn">⤢ All pins</button>
+    </div>
+    <div id="placebar">
+      <div class="msg">Move the map so the <b style="color:#e0245e">red cross</b> sits exactly on the spot, then tap <b>Set pin</b>.</div>
+      <button class="btn" id="placeCancel">Cancel</button>
+      <button class="btn primary" id="placeOk">Set pin here</button>
+    </div>
+  </section>
+</main>
+
+<div class="modal" id="modal"><div class="box" id="modalBox"></div></div>
+<div id="toast"></div>
+<input type="file" id="fileIn" hidden>
+<input type="file" id="camIn" accept="image/*" capture="environment" hidden>
+
+<script>
+"use strict";
+/* ============ basic helpers ============ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const now = () => Date.now();
+function toast(msg, ms = 2600){ const t = $("#toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(toast._t); toast._t = setTimeout(() => t.style.display = "none", ms); }
+function ago(ts){ if(!ts) return "never"; const m = Math.round((now()-ts)/60000); if(m < 1) return "just now"; if(m < 60) return m + " min ago"; const h = Math.round(m/60); if(h < 48) return h + " h ago"; return Math.round(h/24) + " days ago"; }
+function fmtTime(ts){ return ts ? new Date(ts).toLocaleString([], {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"}) : ""; }
+function dist(a, b){ const R = 6371000, r = x => x*Math.PI/180; const dLat = r(b.lat-a.lat), dLng = r(b.lng-a.lng);
+  const h = Math.sin(dLat/2)**2 + Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
+function fmtDist(m){ return m < 1000 ? Math.round(m) + " m" : (m/1000).toFixed(1) + " km"; }
+function stamp(){ const d = new Date(), p = n => String(n).padStart(2, "0"); return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; }
+function blobToDataURL(b){ return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(b); }); }
+async function dataURLToBlob(u){ return (await fetch(u)).blob(); }
+function download(blob, name){ const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); }
+
+const STATUS = {
+  unchecked: {label:"To check", color:"var(--st-unchecked)"},
+  ok:        {label:"Still OK", color:"var(--st-ok)"},
+  changed:   {label:"Changed",  color:"var(--st-changed)"},
+  gone:      {label:"Gone",     color:"var(--st-gone)"},
+  new:       {label:"New",      color:"var(--st-new)"},
+};
+const TYPES = {clue:"Clue", picture:"Picture", photo:"Photo task"};
+const DEFAULT_SECTIONS = [
+  {name:"Birgu", code:"B", label:"Section A"}, {name:"Cospicua", code:"C", label:"Section B"},
+  {name:"Senglea", code:"S", label:"Section C"}, {name:"Anywhere", code:"P", label:"Photo tasks"}];
+
+/* ============ storage (IndexedDB, on this device) ============ */
+const DB = {
+  db: null,
+  open(){ return new Promise((res, rej) => {
+    const r = indexedDB.open("hunt-editor", 1);
+    r.onupgradeneeded = () => { const d = r.result;
+      d.createObjectStore("meta"); d.createObjectStore("items", {keyPath:"id"}); d.createObjectStore("refphotos");
+      d.createObjectStore("photos", {keyPath:"id"}).createIndex("itemId", "itemId"); };
+    r.onsuccess = () => { this.db = r.result; res(); }; r.onerror = () => rej(r.error); }); },
+  req(r){ return new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
+  st(name, mode = "readonly"){ return this.db.transaction(name, mode).objectStore(name); },
+  get(s, k){ return this.req(this.st(s).get(k)); },
+  all(s){ return this.req(this.st(s).getAll()); },
+  keys(s){ return this.req(this.st(s).getAllKeys()); },
+  put(s, v, k){ return this.req(k === undefined ? this.st(s, "readwrite").put(v) : this.st(s, "readwrite").put(v, k)); },
+  del(s, k){ return this.req(this.st(s, "readwrite").delete(k)); },
+  photosFor(id){ return this.req(this.st("photos").index("itemId").getAll(id)); },
+  bulk(s, pairs){ return new Promise((res, rej) => { const t = this.db.transaction(s, "readwrite"), o = t.objectStore(s);
+    for(const [k, v] of pairs) k === null ? o.put(v) : o.put(v, k); t.oncomplete = res; t.onerror = () => rej(t.error); }); },
+  clear(){ return new Promise((res, rej) => { const t = this.db.transaction(["meta","items","refphotos","photos"], "readwrite");
+    for(const s of ["meta","items","refphotos","photos"]) t.objectStore(s).clear(); t.oncomplete = res; t.onerror = () => rej(t.error); }); },
+};
+
+/* ============ app state ============ */
+const S = {
+  meta: null, items: new Map(), photoCount: new Map(),
+  f: {section:"All", type:"all", status:"all", sort:"number", q:""},
+  sel: null, me: null, layer: "streets", placing: null, lang: "en-GB",
+};
+function sections(){ return (S.meta && S.meta.sections) || DEFAULT_SECTIONS; }
+function secCode(name){ const s = sections().find(x => x.name === name); return s ? s.code : "?"; }
+function label(it){ return it.type === "photo" ? "T" + it.number : it.type === "picture" ? secCode(it.section) + "-P" + it.number : secCode(it.section) + it.number; }
+function sortDefault(arr){ const typeOrder = {clue:0, picture:1, photo:2}, secOrder = n => sections().findIndex(s => s.name === n);
+  return arr.sort((a, b) => typeOrder[a.type] - typeOrder[b.type] || secOrder(a.section) - secOrder(b.section) || a.number - b.number); }
+function liveItems(){ return [...S.items.values()].filter(i => !i.deleted); }
+
+async function saveMeta(){ await DB.put("meta", S.meta, "hunt"); }
+const saveTimers = {}, pending = new Set();
+function touch(it, delay = 350){ it.updatedAt = now(); S.meta.lastChange = it.updatedAt; clearTimeout(saveTimers[it.id]); pending.add(it.id);
+  saveTimers[it.id] = setTimeout(() => { pending.delete(it.id); DB.put("items", it); saveMeta(); updateBackupChip(); }, delay); }
+function flushSaves(){ for(const id of pending){ clearTimeout(saveTimers[id]); const it = S.items.get(id); if(it) DB.put("items", it); } pending.clear(); if(S.meta) saveMeta(); }
+
+/* ============ map ============ */
+let map, layers = {}, markers = new Map(), meMarker, meCircle;
+function initMap(){
+  map = L.map("map", {zoomControl:true, maxZoom:21}).setView([35.8865, 14.5200], 16);
+  layers.streets = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {maxZoom:21, maxNativeZoom:19, attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'});
+  layers.sat = L.layerGroup([
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      {maxZoom:21, maxNativeZoom:19, attribution:"Imagery © Esri, Maxar, Earthstar Geographics"}),
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",
+      {maxZoom:21, maxNativeZoom:19, opacity:.9}),
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+      {maxZoom:21, maxNativeZoom:19})]);
+  layers.streets.addTo(map);
+  $("#layerBtn").onclick = () => {
+    if(S.layer === "streets"){ map.removeLayer(layers.streets); layers.sat.addTo(map); S.layer = "sat"; $("#layerBtn").textContent = "🗺 Streets"; }
+    else { map.removeLayer(layers.sat); layers.streets.addTo(map); S.layer = "streets"; $("#layerBtn").textContent = "🛰 Satellite"; }
+    try{ localStorage.setItem("he-layer", S.layer); }catch(e){}
+  };
+  try{ if(localStorage.getItem("he-layer") === "sat") $("#layerBtn").click(); }catch(e){}
+  $("#meBtn").onclick = () => { if(S.me) map.flyTo([S.me.lat, S.me.lng], Math.max(map.getZoom(), 18)); else toast("No location yet. Check that location is allowed for this site."); };
+  $("#fitBtn").onclick = () => { const pts = liveItems().filter(i => i.lat != null).map(i => [i.lat, i.lng]);
+    if(pts.length) map.fitBounds(pts, {padding:[40,40], maxZoom:18}); else toast("Nothing pinned yet."); };
+  $("#placeCancel").onclick = endPlacing;
+  $("#placeOk").onclick = () => { const c = map.getCenter(); const it = S.items.get(S.placing);
+    if(it) setPin(it, c.lat, c.lng, null, "map"); endPlacing(); };
+}
+function markerIcon(it){
+  const sel = S.sel === it.id ? " sel" : "";
+  return L.divIcon({className:"", iconSize:[0,0], iconAnchor:[0,0],
+    html:`<div class="mk ${it.type}${sel}" style="background:${STATUS[it.status]?.color || "#555"}">${esc(label(it))}</div>`});
+}
+function drawMarkers(){
+  const show = new Set(filtered().map(i => i.id));
+  for(const [id, m] of markers){ const it = S.items.get(id);
+    if(!it || it.deleted || it.lat == null || (!show.has(id) && S.sel !== id)){ map.removeLayer(m); markers.delete(id); } }
+  for(const it of liveItems()){
+    if(it.lat == null || (!show.has(it.id) && S.sel !== it.id)) continue;
+    let m = markers.get(it.id);
+    if(!m){ m = L.marker([it.lat, it.lng], {icon:markerIcon(it), draggable:false}).addTo(map);
+      m.on("click", () => openItem(it.id, false));
+      m.on("dragend", e => { const p = e.target.getLatLng(); setPin(S.items.get(it.id), p.lat, p.lng, null, "dragged"); });
+      markers.set(it.id, m);
+    } else { m.setLatLng([it.lat, it.lng]); m.setIcon(markerIcon(it)); }
+    const drag = S.sel === it.id;
+    if(m.dragging) drag ? m.dragging.enable() : m.dragging.disable();
+    m.setZIndexOffset(S.sel === it.id ? 1000 : 0);
+  }
+}
+function startPlacing(id){
+  S.placing = id; const it = S.items.get(id);
+  if(it.lat != null) map.setView([it.lat, it.lng], Math.max(map.getZoom(), 19));
+  else if(S.me) map.setView([S.me.lat, S.me.lng], Math.max(map.getZoom(), 19));
+  $("#cross").style.display = "block"; $("#placebar").style.display = "flex";
+  if(window.innerWidth <= 820) $("#mapwrap").scrollIntoView({behavior:"smooth"});
+}
+function endPlacing(){ S.placing = null; $("#cross").style.display = "none"; $("#placebar").style.display = "none"; }
+
+/* ============ location ============ */
+function startGeo(){
+  if(!("geolocation" in navigator)){ setLocChip("No location on this device", "bad"); return; }
+  navigator.geolocation.watchPosition(p => {
+    S.me = {lat:p.coords.latitude, lng:p.coords.longitude, acc:p.coords.accuracy, t:p.timestamp};
+    const ll = [S.me.lat, S.me.lng];
+    if(!meMarker){
+      meCircle = L.circle(ll, {radius:S.me.acc, color:"#1f6feb", weight:1, fillOpacity:.12, interactive:false}).addTo(map);
+      meMarker = L.marker(ll, {icon:L.divIcon({className:"", html:'<div class="me-dot"></div>', iconSize:[18,18], iconAnchor:[9,9]}), interactive:false, zIndexOffset:-1000}).addTo(map);
+      if(!liveItems().some(i => i.lat != null)) map.setView(ll, 18);
+    } else { meMarker.setLatLng(ll); meCircle.setLatLng(ll); meCircle.setRadius(S.me.acc); }
+    const a = Math.round(S.me.acc);
+    setLocChip(`📍 ±${a} m`, a <= 15 ? "good" : a <= 40 ? "warn" : "bad");
+    const t = now();
+    if(t - (startGeo.last || 0) > 2500){ startGeo.last = t; if(S.f.sort === "near") renderList(); if(S.sel) renderLocBlock(); }
+  }, err => {
+    setLocChip(err.code === 1 ? "📍 Location blocked" : "📍 No fix yet", "bad");
+    if(err.code === 1) toast("Location is blocked. Allow it in the browser's site settings (padlock icon).", 6000);
+  }, {enableHighAccuracy:true, maximumAge:4000, timeout:30000});
+}
+function setLocChip(text, cls){ const c = $("#locChip"); c.textContent = text; c.className = "chip " + (cls || ""); }
+$("#locChip").onclick = () => {
+  const a = S.me ? Math.round(S.me.acc) : null;
+  modal(`<h2>Your location</h2>
+  ${S.me ? `<p>Accuracy right now: <b>±${a} m</b> (the blue circle on the map).</p>` : "<p>No location yet.</p>"}
+  <p>This tablet has no GPS chip, so it works out where you are from nearby Wi‑Fi networks. That needs an internet connection (for example your phone's hotspot) and is often 20 to 50 m out in narrow streets.</p>
+  <p>For exact pins, use <b>Place on map</b>: switch to Satellite, put the red cross on the doorway and tap Set pin. Or open this same app on your phone, which has GPS.</p>
+  <div class="btns"><button class="btn primary" onclick="closeModal()">OK</button></div>`);
+};
+
+/* ============ filters & list ============ */
+function filtered(){
+  const f = S.f, q = f.q.trim().toLowerCase();
+  let arr = liveItems().filter(i =>
+    (f.section === "All" || i.section === f.section) &&
+    (f.type === "all" || i.type === f.type) &&
+    (f.status === "all" || (f.status === "nopin" ? i.lat == null : i.status === f.status)) &&
+    (!q || [i.text, i.answer, i.notes, label(i)].join(" ").toLowerCase().includes(q)));
+  sortDefault(arr);
+  if(f.sort === "near" && S.me){
+    const d = new Map(arr.map(i => [i.id, i.lat != null ? dist(S.me, i) : Infinity])); arr.sort((a, b) => d.get(a.id) - d.get(b.id));
+  } else if(f.sort === "recent"){ arr.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)); }
+  return arr;
+}
+function renderFilters(){
+  const sb = ["All", ...sections().map(s => s.name)];
+  $("#fSection").innerHTML = sb.map(s => `<button data-v="${esc(s)}" class="${S.f.section === s ? "on" : ""}">${esc(s)}</button>`).join("");
+  const tb = [["all","All types"], ["clue","Clues"], ["picture","Pictures"], ["photo","Photo tasks"]];
+  $("#fType").innerHTML = tb.map(([v, l]) => `<button data-v="${v}" class="${S.f.type === v ? "on" : ""}">${l}</button>`).join("");
+}
+function renderList(){
+  if(!$("#list")) return;
+  const arr = filtered(), all = liveItems();
+  const checked = all.filter(i => i.status !== "unchecked").length, pinned = all.filter(i => i.lat != null).length;
+  $("#summary").textContent = `Showing ${arr.length} · Checked ${checked}/${all.length} · Pinned ${pinned}/${all.length}`;
+  if(!arr.length){ $("#list").innerHTML = `<div class="empty">Nothing matches these filters.</div>`; return; }
+  $("#list").innerHTML = arr.map(i => {
+    const first = (i.text || "").split("\n").find(l => l.trim()) || (i.type === "photo" ? "" : "(no clue text yet)");
+    const d = S.me && i.lat != null ? fmtDist(dist(S.me, i)) : "";
+    const pc = S.photoCount.get(i.id) || 0;
+    return `<div class="item${S.sel === i.id ? " sel" : ""}" data-id="${esc(i.id)}">
+      <div class="bar" style="background:${STATUS[i.status]?.color}"></div>
+      <div class="body"><div class="t1">${esc(label(i))} <span class="tag">${TYPES[i.type]}</span>${i.flags?.length ? " ⚠️" : ""}</div>
+      <div class="t2">${esc(first)}</div>
+      <div class="t2" style="font-size:13px">${i.answer ? "Answer: " + esc(i.answer.replace(/\n/g, " / ")) : ""}</div></div>
+      <div class="right">${i.lat != null ? "📍 " + d : "<span style='opacity:.5'>no pin</span>"}${pc ? `<br>📷 ${pc}` : ""}<br>${STATUS[i.status]?.label}</div></div>`;
+  }).join("");
+}
+/* ============ detail ============ */
+function openItem(id, pan){
+  S.sel = id; const it = S.items.get(id); if(!it) return;
+  $("#side").classList.add("detail"); renderDetail(); drawMarkers();
+  if(pan && it.lat != null) map.flyTo([it.lat, it.lng], Math.max(map.getZoom(), 18), {duration:.6});
+  document.querySelectorAll(".item.sel").forEach(x => x.classList.remove("sel"));
+}
+function closeDetail(){ const was = S.sel; stopDictation(); S.sel = null; endPlacing(); $("#side").classList.remove("detail"); renderList(); drawMarkers();
+  const row = was && document.querySelector(`.item[data-id="${CSS.escape(was)}"]`); if(row){ row.classList.add("sel"); row.scrollIntoView({block:"center"}); } }
+function neighbour(step){ const arr = filtered(); const k = arr.findIndex(i => i.id === S.sel); const n = arr[k + step]; if(n) openItem(n.id, true); }
+
+function fieldHTML(key, title, rows){
+  const it = S.items.get(S.sel), v = it[key] ?? "";
+  const inp = rows ? `<textarea id="fld-${key}" rows="${rows}">${esc(v)}</textarea>` : `<input id="fld-${key}" value="${esc(v)}">`;
+  return `<div class="sec"><h3>${title}</h3><div class="field">${inp}
+    <button class="mic" data-for="fld-${key}" title="Speak to type">🎤</button></div><div class="interim" id="int-fld-${key}"></div></div>`;
+}
+function renderDetail(){
+  const it = S.items.get(S.sel); const sec = sections().find(s => s.name === it.section);
+  const changedFields = it.orig ? ["text","answer","points"].filter(k => (it[k] || "") !== (it.orig[k] || "")) : [];
+  $("#detail").innerHTML = `
+  <div class="dhead">
+    <button class="ibtn" id="dBack">‹ List</button>
+    <div class="ttl">${esc(it.section)} · ${TYPES[it.type]} ${it.number}</div>
+    <button class="ibtn" id="dPrev" title="Previous">↑</button><button class="ibtn" id="dNext" title="Next">↓</button>
+  </div>
+  ${(it.flags || []).length ? `<div class="sec">${it.flags.map(f => `<div class="flag">⚠️ ${esc(f)} <button class="btn" style="padding:4px 8px;font-size:13px" data-unflag="${esc(f)}">Dismiss</button></div>`).join("")}</div>` : ""}
+  <div class="sec"><h3>Status</h3><div class="status" id="dStatus">
+    ${Object.entries(STATUS).map(([k, s]) => `<button data-st="${k}" class="${it.status === k ? "on" : ""}" style="${it.status === k ? `background:${s.color};border-color:${s.color}` : `border-color:${s.color}`}">${s.label}</button>`).join("")}
+  </div></div>
+  <div class="sec"><h3>Location</h3><div id="dLoc"></div></div>
+  ${fieldHTML("text", it.type === "clue" ? "Clue" : it.type === "picture" ? "Question" : "Photo task", 6)}
+  ${it.type !== "photo" ? fieldHTML("answer", "Answer", 2) : ""}
+  <div class="sec"><h3>Points</h3><div class="field"><input id="fld-points" value="${esc(it.points)}" style="padding-right:10px" inputmode="text"></div></div>
+  ${fieldHTML("notes", "My notes", 3)}
+  ${it.refPhoto ? `<div class="sec"><h3>Old photo (from the photo sheet)</h3><img class="refimg" id="dRef" alt="Old photo"></div>` : ""}
+  <div class="sec"><h3>New photos</h3><div class="photos" id="dPhotos"></div>
+    <div class="btns" style="margin-top:8px"><button class="btn primary" id="dCam">📷 Take photo</button></div></div>
+  ${changedFields.length ? `<div class="sec"><h3>Original wording (before your edits)</h3>${changedFields.map(k => `<div style="font-size:13px;color:var(--muted);margin:6px 0 2px">${k === "text" ? "Clue" : k[0].toUpperCase() + k.slice(1)}</div><div class="orig">${esc(it.orig[k]) || "(empty)"}</div>`).join("")}</div>` : ""}
+  <div class="sec" style="font-size:13px;color:var(--muted)">Last edited: ${it.updatedAt ? fmtTime(it.updatedAt) : "not yet"} · ID ${esc(it.id)}
+    <div class="btns" style="margin-top:10px"><button class="btn danger" id="dDel">Delete this item</button></div></div>
+  <div style="height:40vh"></div>`;
+
+  $("#dBack").onclick = closeDetail; $("#dPrev").onclick = () => neighbour(-1); $("#dNext").onclick = () => neighbour(1);
+  $("#dStatus").onclick = e => { const b = e.target.closest("button"); if(!b) return; it.status = b.dataset.st; touch(it, 0); renderDetail(); drawMarkers(); };
+  document.querySelectorAll("[data-unflag]").forEach(b => b.onclick = () => { it.flags = it.flags.filter(f => f !== b.dataset.unflag); touch(it, 0); renderDetail(); });
+  for(const k of ["text", "answer", "notes", "points"]){
+    const el = $("#fld-" + k); if(!el) continue;
+    el.addEventListener("input", () => onFieldEdit(it, k, el.value));
+  }
+  document.querySelectorAll(".mic").forEach(b => b.onclick = () => toggleDictation(b));
+  $("#dCam").onclick = () => { S.camFor = it.id; $("#camIn").value = ""; $("#camIn").click(); };
+  $("#dDel").onclick = () => modal(`<h2>Delete ${esc(label(it))}?</h2><p>It disappears from the list and map. A backup made before now still has it.</p>
+    <div class="btns"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn danger" id="mDelOk">Delete</button></div>`,
+    () => { $("#mDelOk").onclick = () => { it.deleted = true; touch(it, 0); closeModal(); closeDetail(); toast("Deleted."); }; });
+  if(it.refPhoto){ DB.get("refphotos", it.refPhoto).then(u => { const im = $("#dRef"); if(im && u){ im.src = u; im.onclick = () => lightbox(u, "Old photo"); } }); }
+  renderLocBlock(); renderPhotos();
+}
+function onFieldEdit(it, k, v){
+  it[k] = v;
+  if(k !== "notes" && it.orig && (it.status === "unchecked" || it.status === "ok") && (v || "") !== (it.orig[k] || "")){
+    it.status = "changed"; toast("Marked as Changed");
+    const box = $("#dStatus"); if(box) box.querySelectorAll("button").forEach(b => { const on = b.dataset.st === "changed", c = STATUS[b.dataset.st].color;
+      b.classList.toggle("on", on); b.style.background = on ? c : ""; b.style.borderColor = c; });
+    drawMarkers();
+  }
+  touch(it);
+}
+function renderLocBlock(){
+  const it = S.items.get(S.sel), box = $("#dLoc"); if(!it || !box) return;
+  const meTxt = S.me ? `±${Math.round(S.me.acc)} m` : "no fix";
+  let html = it.lat != null
+    ? `<div class="loc"><b>${it.lat.toFixed(6)}, ${it.lng.toFixed(6)}</b>
+       <small>${it.acc ? ` · ±${Math.round(it.acc)} m` : ""} · ${it.pinSource === "map" ? "placed on map" : it.pinSource === "dragged" ? "dragged on map" : "from my location"} · ${fmtTime(it.pinnedAt)}</small>
+       ${S.me ? `<br><small>You are ${fmtDist(dist(S.me, it))} away. Drag the pin on the map to fine-tune.</small>` : ""}</div>`
+    : `<div class="loc"><small>Not pinned yet.</small></div>`;
+  html += `<div class="btns">
+    <button class="btn primary" id="lMe" ${S.me ? "" : "disabled"}>📍 Pin at my location (${meTxt})</button>
+    <button class="btn" id="lMap">✛ Place on map</button>
+    ${it.lat != null ? `<button class="btn" id="lClear">Clear</button><a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${it.lat},${it.lng}">Google Maps ↗</a>` : ""}</div>`;
+  box.innerHTML = html;
+  $("#lMe").onclick = () => { if(!S.me) return; if(S.me.acc > 40) toast(`Location is rough (±${Math.round(S.me.acc)} m). Check the pin on the map and drag it if needed.`, 4500);
+    setPin(it, S.me.lat, S.me.lng, S.me.acc, "me"); map.flyTo([S.me.lat, S.me.lng], Math.max(map.getZoom(), 18)); };
+  $("#lMap").onclick = () => startPlacing(it.id);
+  const c = $("#lClear"); if(c) c.onclick = () => { it.lat = it.lng = it.acc = null; it.pinnedAt = null; touch(it, 0); drawMarkers(); renderLocBlock(); };
+}
+function setPin(it, lat, lng, acc, source){
+  it.lat = lat; it.lng = lng; it.acc = acc; it.pinSource = source; it.pinnedAt = now(); touch(it, 0);
+  drawMarkers(); if(S.sel === it.id) renderLocBlock(); toast(`Pinned ${label(it)}`);
+}
+
+/* ============ photos ============ */
+async function renderPhotos(){
+  const box = $("#dPhotos"); if(!box) return; const id = S.sel;
+  const ps = (await DB.photosFor(id)).sort((a, b) => a.takenAt - b.takenAt);
+  if(S.sel !== id) return;
+  (renderPhotos.urls || []).forEach(u => URL.revokeObjectURL(u)); renderPhotos.urls = [];
+  box.innerHTML = ps.length ? "" : `<small style="color:var(--muted)">None yet.</small>`;
+  for(const p of ps){ const u = URL.createObjectURL(p.blob); renderPhotos.urls.push(u);
+    const im = document.createElement("img"); im.src = u; im.onclick = () => lightbox(u, fmtTime(p.takenAt), p.id); box.appendChild(im); }
+}
+$("#camIn").onchange = async e => {
+  const f = e.target.files[0]; const it = S.items.get(S.camFor); if(!f || !it) return;
+  try{
+    const bmp = await createImageBitmap(f); const sc = Math.min(1, 1800 / Math.max(bmp.width, bmp.height));
+    const cv = document.createElement("canvas"); cv.width = Math.round(bmp.width*sc); cv.height = Math.round(bmp.height*sc);
+    cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
+    const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", .82));
+    const p = {id:"ph-" + now().toString(36) + Math.random().toString(36).slice(2, 6), itemId:it.id, blob, takenAt:now(),
+      lat:S.me?.lat ?? null, lng:S.me?.lng ?? null};
+    await DB.put("photos", p); S.photoCount.set(it.id, (S.photoCount.get(it.id) || 0) + 1);
+    touch(it, 0); renderPhotos(); toast("Photo saved");
+  }catch(err){ toast("Could not save the photo: " + err.message, 5000); }
+};
+function lightbox(src, caption, photoId){
+  modal(`<div class="lb"><img src="${src}"><p style="text-align:center;color:var(--muted)">${esc(caption || "")}</p>
+    <div class="btns" style="justify-content:center">${photoId ? `<button class="btn danger" id="lbDel">Delete photo</button>` : ""}<button class="btn primary" onclick="closeModal()">Close</button></div></div>`,
+  () => { const d = $("#lbDel"); if(d) d.onclick = async () => { await DB.del("photos", photoId);
+    S.photoCount.set(S.sel, Math.max(0, (S.photoCount.get(S.sel) || 1) - 1)); const it = S.items.get(S.sel); if(it) touch(it, 0);
+    closeModal(); renderPhotos(); toast("Photo deleted"); }; });
+}
+
+/* ============ voice (speech to text) ============ */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, recBtn = null;
+function stopDictation(){ if(rec){ try{ rec.stop(); }catch(e){} } }
+function toggleDictation(btn){
+  if(rec && recBtn === btn){ stopDictation(); return; }
+  stopDictation();
+  if(!SR){ toast("Voice typing isn't available in this browser. Use the 🎤 key on the keyboard instead.", 5000); return; }
+  const el = document.getElementById(btn.dataset.for), interim = document.getElementById("int-" + btn.dataset.for);
+  rec = new SR(); recBtn = btn; rec.lang = S.lang; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
+  let finalText = "";
+  rec.onstart = () => { btn.classList.add("live"); btn.textContent = "■"; interim.textContent = "Listening…"; };
+  rec.onresult = ev => { let t = ""; finalText = "";
+    for(let i = 0; i < ev.results.length; i++){ if(ev.results[i].isFinal) finalText += ev.results[i][0].transcript; else t += ev.results[i][0].transcript; }
+    interim.textContent = (finalText + t) || "Listening…"; };
+  rec.onerror = ev => { interim.textContent = ev.error === "not-allowed" ? "Microphone blocked. Allow it in the site settings." :
+    ev.error === "network" ? "Voice needs an internet connection." : ev.error === "no-speech" ? "Didn't hear anything." : "Voice error: " + ev.error; };
+  rec.onend = () => { btn.classList.remove("live"); btn.textContent = "🎤";
+    const t = finalText.trim();
+    if(t && el){ const v = el.value; el.value = v + (v && !/\s$/.test(v) ? (el.tagName === "TEXTAREA" && el.id === "fld-notes" ? "\n" : " ") : "") + t;
+      el.dispatchEvent(new Event("input")); interim.textContent = "✓ Added"; setTimeout(() => { if(interim.textContent === "✓ Added") interim.textContent = ""; }, 2000); }
+    else if(interim.textContent === "Listening…") interim.textContent = "";
+    rec = null; recBtn = null; };
+  try{ rec.start(); }catch(e){ toast("Could not start voice typing: " + e.message); rec = null; }
+}
+
+/* ============ new item ============ */
+$("#newBtn").onclick = () => {
+  if(!S.meta){ toast("Load a hunt file first (☰ menu)."); return; }
+  const defSec = S.f.section !== "All" ? S.f.section : (S.lastNewSec || "Birgu");
+  const defType = S.f.type !== "all" ? S.f.type : (S.lastNewType || "clue");
+  modal(`<h2>New item</h2>
+    <label>Type</label><select class="full" id="nType">${Object.entries(TYPES).map(([k, l]) => `<option value="${k}" ${k === defType ? "selected" : ""}>${l}</option>`).join("")}</select>
+    <div style="height:10px"></div>
+    <label>Section</label><select class="full" id="nSec">${sections().map(s => `<option ${s.name === defSec ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select>
+    <p style="font-size:14px;color:var(--muted)">${S.me ? `It will be pinned at your location (±${Math.round(S.me.acc)} m). You can move the pin afterwards.` : "No location yet, so it will be pinned at the centre of the map. You can move it afterwards."}</p>
+    <div class="btns"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" id="nOk">Create</button></div>`,
+  () => { $("#nOk").onclick = async () => {
+    const type = $("#nType").value, section = $("#nSec").value; S.lastNewSec = section; S.lastNewType = type;
+    const nums = liveItems().filter(i => i.type === type && (type === "photo" || i.section === section)).map(i => i.number);
+    const number = (nums.length ? Math.max(...nums) : 0) + 1;
+    const c = S.me || map.getCenter();
+    const it = {id:`${secCode(section)}-${type}-n${now().toString(36)}`, type, section, number, text:"", answer:"", points: type === "photo" ? "20" : "10",
+      notes:"", status:"new", flags:[], refPhoto:null, lat:c.lat, lng:c.lng, acc:S.me ? S.me.acc : null, pinSource:S.me ? "me" : "map", pinnedAt:now(), createdAt:now()};
+    S.items.set(it.id, it); touch(it, 0); closeModal(); renderList(); openItem(it.id, true);
+    setTimeout(() => $("#fld-text")?.focus(), 150);
+  }; });
+};
+
+/* ============ modal ============ */
+function modal(html, after){ $("#modalBox").innerHTML = html; $("#modal").classList.add("show"); if(after) after(); }
+function closeModal(){ $("#modal").classList.remove("show"); }
+$("#modal").onclick = e => { if(e.target.id === "modal") closeModal(); };
+
+/* ============ load / merge / backup / export ============ */
+function openFile(){ $("#fileIn").value = ""; $("#fileIn").click(); }
+$("#fileIn").onchange = async e => {
+  const f = e.target.files[0]; if(!f) return;
+  let data; try{ data = JSON.parse(await f.text()); }catch(err){ toast("That file isn't a hunt or backup file.", 4000); return; }
+  if(!data || !Array.isArray(data.items) || !/^hunt-editor/.test(data.format || "")){ toast("That file isn't a hunt or backup file.", 4000); return; }
+  await importData(data, f.name);
+};
+async function importData(data, fname){
+  const had = liveItems().length > 0;
+  const incomingMeta = data.meta || {title:data.title, intro:data.intro, sections:data.sections};
+  if(!S.meta) S.meta = {title:incomingMeta.title || "Treasure Hunt", intro:incomingMeta.intro || "", sections:incomingMeta.sections || DEFAULT_SECTIONS, created:now()};
+  else if(incomingMeta.introUpdatedAt && incomingMeta.introUpdatedAt > (S.meta.introUpdatedAt || 0)){ S.meta.intro = incomingMeta.intro; S.meta.introUpdatedAt = incomingMeta.introUpdatedAt; }
+  let added = 0, updated = 0, kept = 0;
+  const pairs = [];
+  for(const raw of data.items){
+    const inc = Object.assign({status:"unchecked", flags:[], notes:"", updatedAt:0}, raw);
+    const cur = S.items.get(inc.id);
+    if(!cur){ S.items.set(inc.id, inc); pairs.push([null, inc]); added++; }
+    else if((inc.updatedAt || 0) > (cur.updatedAt || 0)){ S.items.set(inc.id, inc); pairs.push([null, inc]); updated++; }
+    else kept++;
+  }
+  await DB.bulk("items", pairs);
+  const refs = data.refPhotos || {};
+  const haveRefs = new Set(await DB.keys("refphotos"));
+  await DB.bulk("refphotos", Object.entries(refs).filter(([k]) => !haveRefs.has(k)).map(([k, v]) => [k, v]));
+  let ph = 0;
+  if(Array.isArray(data.photos)){
+    const have = new Set(await DB.keys("photos"));
+    for(const p of data.photos){ if(have.has(p.id) || !p.data) continue;
+      await DB.put("photos", {id:p.id, itemId:p.itemId, takenAt:p.takenAt, lat:p.lat, lng:p.lng, blob:await dataURLToBlob(p.data)}); ph++; }
+  }
+  if(data.format === "hunt-editor-backup/1" && !had) S.meta.lastBackup = data.exportedAt;
+  await saveMeta(); await countPhotos();
+  showApp(); renderFilters(); renderList(); drawMarkers(); updateBackupChip();
+  if(had) modal(`<h2>Merged</h2><p>From <b>${esc(fname)}</b>:</p><ul><li>${added} new items added</li><li>${updated} items updated (the file's version was newer)</li><li>${kept} items kept as they were on this device</li><li>${ph} new photos</li></ul><div class="btns"><button class="btn primary" onclick="closeModal()">OK</button></div>`);
+  else toast(`Loaded ${added} items${ph ? " and " + ph + " photos" : ""}.`, 4000);
+}
+async function buildBackup(){
+  const photos = [];
+  for(const p of await DB.all("photos")) photos.push({id:p.id, itemId:p.itemId, takenAt:p.takenAt, lat:p.lat, lng:p.lng, data:await blobToDataURL(p.blob)});
+  const refPhotos = {}; for(const k of await DB.keys("refphotos")) refPhotos[k] = await DB.get("refphotos", k);
+  return {format:"hunt-editor-backup/1", exportedAt:now(), device:navigator.userAgent, meta:S.meta, items:[...S.items.values()], refPhotos, photos};
+}
+async function saveBackup(share){
+  toast("Preparing backup…");
+  const data = await buildBackup(); const name = `hunt-backup-${stamp()}.json`;
+  const blob = new Blob([JSON.stringify(data)], {type:"application/json"});
+  const file = new File([blob], name, {type:"application/json"});
+  if(share && navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file], title:name}); }catch(e){ if(e.name === "AbortError") return; download(blob, name); }
+  } else download(blob, name);
+  S.meta.lastBackup = now(); await saveMeta(); updateBackupChip();
+  toast(`Backup saved: ${name} (${(blob.size/1048576).toFixed(1)} MB)`, 4000);
+}
+function exportCSV(){
+  const cols = ["section","type","number","status","text","answer","points","lat","lng","accuracy_m","pin_source","notes","new_photos","changed_fields","last_edited","id"];
+  const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const rows = sortDefault(liveItems());
+  const lines = [cols.join(",")].concat(rows.map(i => [i.section, TYPES[i.type], i.number, STATUS[i.status]?.label, i.text, i.answer, i.points,
+    i.lat ?? "", i.lng ?? "", i.acc != null ? Math.round(i.acc) : "", i.pinSource || "", i.notes, S.photoCount.get(i.id) || 0,
+    i.orig ? ["text","answer","points"].filter(k => (i[k] || "") !== (i.orig[k] || "")).join(" ") : "new item",
+    i.updatedAt ? new Date(i.updatedAt).toISOString() : "", i.id].map(q).join(",")));
+  download(new Blob(["﻿" + lines.join("\r\n")], {type:"text/csv"}), `hunt-${stamp()}.csv`);
+}
+async function countPhotos(){ S.photoCount = new Map(); for(const p of await DB.all("photos")) S.photoCount.set(p.itemId, (S.photoCount.get(p.itemId) || 0) + 1); }
+function updateBackupChip(){
+  const c = $("#bkChip"); if(!S.meta){ c.textContent = "💾 –"; c.className = "chip"; return; }
+  const lb = S.meta.lastBackup, lc = S.meta.lastChange || 0;
+  const stale = lc > (lb || 0);
+  c.textContent = "💾 " + (lb ? "Backup " + ago(lb) : "No backup yet");
+  c.className = "chip " + (stale ? ((now() - (lb || 0) > 3*3600e3) ? "bad" : "warn") : "good");
+}
+setInterval(updateBackupChip, 60000);
+$("#bkChip").onclick = () => menu();
+
+/* ============ menu ============ */
+function menu(){
+  const lb = S.meta?.lastBackup;
+  modal(`<h2>Menu</h2><div class="menu">
+    <button id="m1">💾 Save backup file<small>Everything (edits, pins, photos) in one file. Last backup: ${ago(lb)}.</small></button>
+    ${navigator.canShare ? `<button id="m2">📤 Share backup<small>Send the backup to OneDrive, Drive, your phone, or email.</small></button>` : ""}
+    <button id="m3">📂 Load hunt or backup file<small>Loads a hunt file, or merges a backup from another device. The newest version of each item wins.</small></button>
+    <button id="m4">📄 Export spreadsheet (CSV)<small>All items with answers, coordinates and status, for Excel.</small></button>
+    <button id="m5">📝 Hunt intro text<small>Read or edit the introduction given to teams.</small></button>
+    <button id="m6">🎤 Voice language: ${esc(S.lang)}<small>Language used for speaking into fields.</small></button>
+    <button id="m7">ℹ️ How this works<small>Storage, location and tips.</small></button>
+    <button id="m8" style="color:#c62828">🗑 Erase everything on this device<small>Only do this after saving a backup.</small></button>
+  </div><div class="btns" style="margin-top:12px"><button class="btn" onclick="closeModal()">Close</button></div>`, () => {
+    $("#m1").onclick = () => { closeModal(); saveBackup(false); };
+    if($("#m2")) $("#m2").onclick = () => { closeModal(); saveBackup(true); };
+    $("#m3").onclick = () => { closeModal(); openFile(); };
+    $("#m4").onclick = () => { closeModal(); exportCSV(); };
+    $("#m5").onclick = introEditor;
+    $("#m6").onclick = () => modal(`<h2>Voice language</h2><select class="full" id="lang">
+        ${[["en-GB","English (UK)"],["en-US","English (US)"],["mt-MT","Maltese"],["it-IT","Italian"]].map(([v, l]) => `<option value="${v}" ${S.lang === v ? "selected" : ""}>${l}</option>`).join("")}</select>
+        <p style="font-size:14px;color:var(--muted)">If voice typing is unreliable, the 🎤 key on the Android keyboard works in every box too.</p>
+        <div class="btns"><button class="btn primary" id="langOk">Save</button></div>`,
+        () => $("#langOk").onclick = () => { S.lang = $("#lang").value; try{ localStorage.setItem("he-lang", S.lang); }catch(e){} closeModal(); toast("Voice language: " + S.lang); });
+    $("#m7").onclick = help;
+    $("#m8").onclick = () => modal(`<h2>Erase everything?</h2><p>This removes all items, pins and photos from this device. It cannot be undone unless you have a backup file.</p>
+      <div class="btns"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn danger" id="eraseOk">Erase</button></div>`,
+      () => $("#eraseOk").onclick = async () => { await DB.clear(); location.reload(); });
+  });
+}
+$("#menuBtn").onclick = menu;
+function introEditor(){
+  modal(`<h2>Hunt intro</h2><div class="field"><textarea id="introTxt" rows="14">${esc(S.meta?.intro || "")}</textarea>
+    <button class="mic" data-for="introTxt">🎤</button></div><div class="interim" id="int-introTxt"></div>
+    <div class="btns" style="margin-top:10px"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" id="introOk">Save</button></div>`,
+    () => { document.querySelectorAll("#modalBox .mic").forEach(b => b.onclick = () => toggleDictation(b));
+      $("#introOk").onclick = async () => { S.meta.intro = $("#introTxt").value; S.meta.introUpdatedAt = S.meta.lastChange = now(); await saveMeta(); updateBackupChip(); closeModal(); toast("Saved"); }; });
+}
+function help(){
+  modal(`<h2>How this works</h2>
+  <p><b>Where your data lives.</b> Everything is saved on this device as you type, even with no internet. Nothing is sent anywhere. Save a backup file regularly (the 💾 chip turns orange when you have unsaved changes), and keep it somewhere safe such as OneDrive.</p>
+  <p><b>Tablet and phone.</b> Each device keeps its own copy. To combine them, save a backup on one device and load it on the other. Items edited on both devices keep the most recent edit.</p>
+  <p><b>Location.</b> The blue dot shows where the device thinks you are, and the circle shows how unsure it is. Use <b>Pin at my location</b> when the circle is small, or <b>Place on map</b> for an exact spot. When an item is open, you can drag its pin.</p>
+  <p><b>Voice.</b> Tap 🎤 next to a box, speak, and pause. Your words are added to the end of that box. It needs internet.</p>
+  <p><b>Status colours.</b> ${Object.values(STATUS).map(s => `<span style="display:inline-block;padding:2px 8px;border-radius:6px;color:#fff;background:${s.color};margin:2px">${s.label}</span>`).join(" ")}</p>
+  <div class="btns"><button class="btn primary" onclick="closeModal()">OK</button></div>`);
+}
+
+/* ============ welcome / boot ============ */
+function showWelcome(){
+  $("#side").innerHTML = `<div style="overflow:auto;padding:12px"><div class="welcome" style="margin:10px auto">
+    <h2>Welcome</h2>
+    <p>To start, load your hunt file. It holds the clues, answers and old photos. It's kept on this device and never uploaded.</p>
+    <div class="btns"><button class="btn primary" id="wLoad">📂 Load hunt file</button><button class="btn" id="wEmpty">Start an empty hunt</button></div>
+    <p style="font-size:14px;color:var(--muted);margin-top:16px">Tip: in Chrome's ⋮ menu choose <b>Add to Home screen</b> so it opens like an app.</p>
+  </div></div>`;
+  $("#wLoad").onclick = openFile;
+  $("#wEmpty").onclick = async () => { S.meta = {title:"Treasure Hunt", intro:"", sections:DEFAULT_SECTIONS, created:now()}; await saveMeta(); location.reload(); };
+}
+let sideHTML;
+function showApp(){ if(sideHTML && !$("#list")){ $("#side").innerHTML = sideHTML; rebindSide(); } }
+function refilter(){ renderList(); drawMarkers(); const l = $("#list"); if(l) l.scrollTop = 0; }
+function rebindSide(){
+  $("#fSection").onclick = e => { const b = e.target.closest("button"); if(!b) return; S.f.section = b.dataset.v; renderFilters(); refilter(); };
+  $("#fType").onclick = e => { const b = e.target.closest("button"); if(!b) return; S.f.type = b.dataset.v; renderFilters(); refilter(); };
+  $("#fStatus").onchange = e => { S.f.status = e.target.value; refilter(); };
+  $("#fSort").onchange = e => { S.f.sort = e.target.value; if(e.target.value === "near" && !S.me) toast("Waiting for your location…"); refilter(); };
+  $("#fSearch").oninput = e => { S.f.q = e.target.value; refilter(); };
+  $("#list").onclick = e => { const r = e.target.closest(".item"); if(r) openItem(r.dataset.id, true); };
+}
+async function boot(){
+  sideHTML = $("#side").innerHTML; rebindSide();
+  try{ S.lang = localStorage.getItem("he-lang") || "en-GB"; }catch(e){}
+  initMap();
+  try{ await DB.open(); }catch(e){ document.body.innerHTML = `<div class="welcome"><h2>Storage unavailable</h2><p>This browser blocked on-device storage (${esc(e.message)}). Open the app in Chrome, not in a private tab.</p></div>`; return; }
+  if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  S.meta = await DB.get("meta", "hunt") || null;
+  for(const it of await DB.all("items")) S.items.set(it.id, it);
+  await countPhotos();
+  if(!S.meta){ showWelcome(); }
+  else { renderFilters(); renderList(); drawMarkers(); const pts = liveItems().filter(i => i.lat != null);
+    if(pts.length) map.fitBounds(pts.map(i => [i.lat, i.lng]), {padding:[40,40], maxZoom:18}); }
+  updateBackupChip(); startGeo();
+  if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+window.addEventListener("pagehide", flushSaves);
+document.addEventListener("visibilitychange", () => { if(document.visibilityState === "hidden") flushSaves(); });
+boot();
+</script>
+</body>
+</html>
