@@ -1,0 +1,8 @@
+name: probe
+on: { push: { branches: [ci-probe] } }
+jobs:
+  hello:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "runner ok"; java -version; echo "ANDROID_HOME=$ANDROID_HOME"; ls $ANDROID_HOME/build-tools | tail -3; ls /dev/kvm && echo KVM-present
+      - run: curl -s -o /dev/null -w "protomaps %{http_code}\n" -r 0-100 https://build.protomaps.com/$(date -u -d '2 days ago' +%Y%m%d).pmtiles
